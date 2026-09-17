@@ -50,6 +50,31 @@ namespace TapAway.Core.Tests
 		}
 
 		[Test]
+		public void BlockBeyondLegacyRayCap_BlocksEscape()
+		{
+			var state = State(
+				new PuzzleBlock(1, 0, 0, 0, EscapeDirection.PosX),
+				new PuzzleBlock(2, 65, 0, 0, EscapeDirection.PosY));
+
+			var result = state.TryRemove(new BlockId(1));
+
+			Assert.That(result.Status, Is.EqualTo(MoveStatus.Blocked));
+			Assert.That(result.BlockingBlockId, Is.EqualTo(new BlockId(2)));
+		}
+
+		[Test]
+		public void PositiveRay_DoesNotWrapAtIntMaxValue()
+		{
+			var state = State(
+				new PuzzleBlock(1, int.MaxValue, 0, 0, EscapeDirection.PosX),
+				new PuzzleBlock(2, int.MinValue, 0, 0, EscapeDirection.PosY));
+
+			var result = state.TryRemove(new BlockId(1));
+
+			Assert.That(result.Status, Is.EqualTo(MoveStatus.Allowed));
+		}
+
+		[Test]
 		public void BlockBesideRay_DoesNotBlock()
 		{
 			var state = State(

@@ -31,6 +31,37 @@ namespace TapAway.PlayMode.Tests
 		}
 
 		[UnityTest]
+		public IEnumerator BootstrapScene_FramesAllBlockRenderersInCamera()
+		{
+			yield return LoadBootstrap();
+
+			var bootstrap = Object.FindFirstObjectByType<LevelBootstrap>();
+			yield return null;
+
+			var camera = Camera.main;
+			Assert.That(camera, Is.Not.Null);
+			foreach (var renderer in bootstrap.Presenter.BlocksRoot.GetComponentsInChildren<Renderer>())
+			{
+				var bounds = renderer.bounds;
+				var extents = bounds.extents;
+				for (var x = -1; x <= 1; x += 2)
+				{
+					for (var y = -1; y <= 1; y += 2)
+					{
+						for (var z = -1; z <= 1; z += 2)
+						{
+							var point = bounds.center + Vector3.Scale(extents, new Vector3(x, y, z));
+							var viewport = camera.WorldToViewportPoint(point);
+							Assert.That(viewport.z, Is.GreaterThan(0f), renderer.name + " must be in front of the camera");
+							Assert.That(viewport.x, Is.InRange(0.005f, 0.995f), renderer.name + " must fit horizontally");
+							Assert.That(viewport.y, Is.InRange(0.005f, 0.995f), renderer.name + " must fit vertically");
+						}
+					}
+				}
+			}
+		}
+
+		[UnityTest]
 		public IEnumerator AllowedMove_UpdatesCoreAndRemovesView()
 		{
 			yield return LoadBootstrap();

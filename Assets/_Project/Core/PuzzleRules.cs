@@ -9,12 +9,6 @@ namespace TapAway.Core
 	public static class PuzzleRules
 	{
 		/// <summary>
-		/// Maximum ray steps when scanning for blockers.
-		/// Bounds are small for Phase 1 levels; generous headroom for safety.
-		/// </summary>
-		public const int MaxRaySteps = 64;
-
-		/// <summary>
 		/// Evaluates whether <paramref name="blockId"/> can escape given active occupancy.
 		/// </summary>
 		/// <param name="blockId">Candidate block.</param>
@@ -28,24 +22,56 @@ namespace TapAway.Core
 			out BlockId blockingId)
 		{
 			blockingId = default;
+			var bestDistance = long.MaxValue;
 
-			EscapeDirectionUtil.GetStep(definition.EscapeDirection, out var dx, out var dy, out var dz);
-			var cell = definition.Position.Offset(dx, dy, dz);
-
-			for (var step = 0; step < MaxRaySteps; step++)
+			foreach (var pair in occupancy)
 			{
-				if (occupancy.TryGetValue(cell, out var occupant))
+				var position = pair.Key;
+				long distance;
+				switch (definition.EscapeDirection)
 				{
-					// Occupant on the escape ray always blocks; never the mover itself
-					// because the ray starts on the adjacent cell.
-					blockingId = occupant;
-					return MoveStatus.Blocked;
+					case EscapeDirection.PosX:
+						if (position.Y != definition.Position.Y || position.Z != definition.Position.Z || position.X <= definition.Position.X)
+							continue;
+						distance = (long)position.X - definition.Position.X;
+						break;
+					case EscapeDirection.NegX:
+						if (position.Y != definition.Position.Y || position.Z != definition.Position.Z || position.X >= definition.Position.X)
+							continue;
+						distance = (long)definition.Position.X - position.X;
+						break;
+					case EscapeDirection.PosY:
+						if (position.X != definition.Position.X || position.Z != definition.Position.Z || position.Y <= definition.Position.Y)
+							continue;
+						distance = (long)position.Y - definition.Position.Y;
+						break;
+					case EscapeDirection.NegY:
+						if (position.X != definition.Position.X || position.Z != definition.Position.Z || position.Y >= definition.Position.Y)
+							continue;
+						distance = (long)definition.Position.Y - position.Y;
+						break;
+					case EscapeDirection.PosZ:
+						if (position.X != definition.Position.X || position.Y != definition.Position.Y || position.Z <= definition.Position.Z)
+							continue;
+						distance = (long)position.Z - definition.Position.Z;
+						break;
+					case EscapeDirection.NegZ:
+						if (position.X != definition.Position.X || position.Y != definition.Position.Y || position.Z >= definition.Position.Z)
+							continue;
+						distance = (long)definition.Position.Z - position.Z;
+						break;
+					default:
+						continue;
 				}
 
-				cell = cell.Offset(dx, dy, dz);
+				if (distance < bestDistance)
+				{
+					bestDistance = distance;
+					blockingId = pair.Value;
+				}
 			}
 
-			return MoveStatus.Allowed;
+			return bestDistance == long.MaxValue ? MoveStatus.Allowed : MoveStatus.Blocked;
 		}
 	}
 }

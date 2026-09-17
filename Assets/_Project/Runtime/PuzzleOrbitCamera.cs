@@ -62,7 +62,10 @@ namespace TapAway.Runtime
 
 			var cam = Camera;
 			var vFov = cam != null ? cam.fieldOfView : 60f;
-			var half = Mathf.Max(0.1f, vFov * 0.5f) * Mathf.Deg2Rad;
+			var verticalHalf = Mathf.Max(0.1f, vFov * 0.5f) * Mathf.Deg2Rad;
+			var aspect = cam != null ? Mathf.Max(0.01f, cam.aspect) : 1f;
+			var horizontalHalf = Mathf.Atan(Mathf.Tan(verticalHalf) * aspect);
+			var half = Mathf.Min(verticalHalf, horizontalHalf);
 			// Extra padding leaves room for future HUD / bottom safe area.
 			_distance = (extents / Mathf.Sin(half)) * _framePadding;
 			_distance = Mathf.Clamp(_distance, 4f, 24f);
