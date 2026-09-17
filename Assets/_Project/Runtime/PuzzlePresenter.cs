@@ -13,28 +13,33 @@ namespace TapAway.Runtime
 	{
 		[SerializeField] private Transform _blocksRoot;
 		[SerializeField] private float _cellSize = 1.05f;
-		[SerializeField] private float _flyDistance = 8f;
-		[SerializeField] private float _flyDuration = 0.35f;
-		[SerializeField] private float _bumpDistance = 0.18f;
-		[SerializeField] private float _bumpDuration = 0.12f;
+		[SerializeField] private float _flyDistance = 9f;
+		[SerializeField] private float _flyDuration = 0.32f;
+		[SerializeField] private float _bumpDistance = 0.22f;
+		[SerializeField] private float _bumpDuration = 0.11f;
+		[SerializeField] private float _selectAckSeconds = 0.05f;
 
 		private readonly Dictionary<int, BlockView> _views = new Dictionary<int, BlockView>();
 		private PuzzleState _state;
 		private bool _inputLocked;
+		private bool _interactionEnabled = true;
 		private Action<MoveResult> _onMoveResolved;
 		private Action _onCompleted;
+		private BlockId _highlightId;
 
 		public PuzzleState State => _state;
-		public bool IsInputLocked => _inputLocked;
+		public bool IsInputLocked => _inputLocked || !_interactionEnabled;
 		public int ViewCount => _views.Count;
 		public Transform BlocksRoot => _blocksRoot != null ? _blocksRoot : transform;
 
-		/// <summary>
-		/// Assigns the transform that will parent spawned BlockViews.
-		/// </summary>
 		public void SetBlocksRoot(Transform root)
 		{
 			_blocksRoot = root;
+		}
+
+		public void SetInteractionEnabled(bool enabled)
+		{
+			_interactionEnabled = enabled;
 		}
 
 		public void Initialize(
@@ -47,6 +52,8 @@ namespace TapAway.Runtime
 			_onMoveResolved = onMoveResolved;
 			_onCompleted = onCompleted;
 			_inputLocked = false;
+			_interactionEnabled = true;
+			_highlightId = default;
 			RebuildViews();
 		}
 
@@ -55,7 +62,7 @@ namespace TapAway.Runtime
 		/// </summary>
 		public bool TrySelect(BlockView view)
 		{
-			if (_inputLocked || view == null || _state == null || view.IsAnimating)
+			if (IsInputLocked || view == null || _state == null || view.IsAnimating)
 			{
 				return false;
 			}
@@ -65,23 +72,29 @@ namespace TapAway.Runtime
 				return false;
 			}
 
+			// Immediate visual acknowledgement of WHICH block was hit.
+			view.PlaySelectFlash();
+			HapticFeedback.Play(HapticFeedback.Kind.LightSuccess);
+
 			var result = _state.TryRemove(view.BlockId);
 			_onMoveResolved?.Invoke(result);
 
 			if (result.Status == MoveStatus.Allowed)
 			{
 				_inputLocked = true;
-				StartCoroutine(PlayAllowedRoutine(view, result));
+				StartCoroutine(PlayAllowedRoutine(view));
 				return true;
 			}
 
 			if (result.Status == MoveStatus.Blocked)
 			{
 				_inputLocked = true;
+				HapticFeedback.Play(HapticFeedback.Kind.Blocked);
 				StartCoroutine(PlayBlockedRoutine(view));
 				return true;
 			}
 
+			view.RestoreBaseColor();
 			return false;
 		}
 
@@ -89,6 +102,25 @@ namespace TapAway.Runtime
 		{
 			_views.TryGetValue(id.Value, out var view);
 			return view;
+		}
+
+		public void SetTutorialHighlight(BlockId id)
+		{
+			ClearTutorialHighlight();
+			_highlightId = id;
+			var view = GetView(id);
+			view?.SetHighlighted(true);
+		}
+
+		public void ClearTutorialHighlight()
+		{
+			if (_highlightId.Value != 0)
+			{
+				var previous = GetView(_highlightId);
+				previous?.SetHighlighted(false);
+			}
+
+			_highlightId = default;
 		}
 
 		public Bounds ComputeBounds()
@@ -147,17 +179,17 @@ namespace TapAway.Runtime
 			var body = GameObject.CreatePrimitive(PrimitiveType.Cube);
 			body.name = "Body";
 			body.transform.SetParent(root.transform, false);
-			body.transform.localScale = Vector3.one * 0.9f;
+			body.transform.localScale = Vector3.one * 0.88f;
 
-			// Remove physics authority — collider is pick-only.
 			var bodyCollider = body.GetComponent<Collider>();
 			if (bodyCollider != null)
 			{
 				Destroy(bodyCollider);
 			}
 
+			// Slightly forgiving pick target without giant surprising colliders.
 			var pick = root.AddComponent<BoxCollider>();
-			pick.size = Vector3.one * 0.95f;
+			pick.size = Vector3.one * 0.98f;
 
 			var arrow = CreateArrow(root.transform);
 			var view = root.AddComponent<BlockView>();
@@ -171,27 +203,39 @@ namespace TapAway.Runtime
 			var arrowRoot = new GameObject("Arrow");
 			arrowRoot.transform.SetParent(parent, false);
 
+			var contrast = new Color(0.08f, 0.08f, 0.1f, 1f);
+			var accent = new Color(1f, 0.9f, 0.15f, 1f);
+
+			// Dark outline plate behind the arrow for phone contrast.
+			var plate = GameObject.CreatePrimitive(PrimitiveType.Cube);
+			plate.name = "Plate";
+			plate.transform.SetParent(arrowRoot.transform, false);
+			plate.transform.localPosition = new Vector3(0f, 0f, 0.62f);
+			plate.transform.localScale = new Vector3(0.34f, 0.08f, 0.72f);
+			Destroy(plate.GetComponent<Collider>());
+			plate.GetComponent<Renderer>().material.color = contrast;
+
 			var shaft = GameObject.CreatePrimitive(PrimitiveType.Cube);
 			shaft.name = "Shaft";
 			shaft.transform.SetParent(arrowRoot.transform, false);
-			shaft.transform.localPosition = new Vector3(0f, 0f, 0.55f);
-			shaft.transform.localScale = new Vector3(0.12f, 0.12f, 0.55f);
+			shaft.transform.localPosition = new Vector3(0f, 0.02f, 0.58f);
+			shaft.transform.localScale = new Vector3(0.16f, 0.16f, 0.62f);
 			Destroy(shaft.GetComponent<Collider>());
-			shaft.GetComponent<Renderer>().material.color = new Color(1f, 0.92f, 0.2f);
+			shaft.GetComponent<Renderer>().material.color = accent;
 
 			var head = GameObject.CreatePrimitive(PrimitiveType.Cube);
 			head.name = "Head";
 			head.transform.SetParent(arrowRoot.transform, false);
-			head.transform.localPosition = new Vector3(0f, 0f, 0.95f);
+			head.transform.localPosition = new Vector3(0f, 0.02f, 1.02f);
 			head.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
-			head.transform.localScale = new Vector3(0.28f, 0.08f, 0.28f);
+			head.transform.localScale = new Vector3(0.34f, 0.1f, 0.34f);
 			Destroy(head.GetComponent<Collider>());
-			head.GetComponent<Renderer>().material.color = new Color(1f, 0.75f, 0.1f);
+			head.GetComponent<Renderer>().material.color = accent;
 
 			return arrowRoot.transform;
 		}
 
-		private IEnumerator PlayAllowedRoutine(BlockView view, MoveResult result)
+		private IEnumerator PlayAllowedRoutine(BlockView view)
 		{
 			if (view == null)
 			{
@@ -200,6 +244,11 @@ namespace TapAway.Runtime
 			}
 
 			view.SetAnimating(true);
+			if (_selectAckSeconds > 0f)
+			{
+				yield return new WaitForSeconds(_selectAckSeconds);
+			}
+
 			var dir = BlockView.DirectionToWorld(view.EscapeDirection);
 			var start = view.transform.position;
 			var end = start + dir.normalized * _flyDistance;
@@ -213,8 +262,10 @@ namespace TapAway.Runtime
 				}
 
 				t += Time.deltaTime / Mathf.Max(0.01f, _flyDuration);
-				var eased = t * t * (3f - 2f * t);
-				view.transform.position = Vector3.Lerp(start, end, Mathf.Clamp01(eased));
+				// Ease-in cubic: snappy start, clear exit.
+				var u = Mathf.Clamp01(t);
+				var eased = u * u * u;
+				view.transform.position = Vector3.Lerp(start, end, eased);
 				yield return null;
 			}
 
@@ -235,14 +286,19 @@ namespace TapAway.Runtime
 		private IEnumerator PlayBlockedRoutine(BlockView view)
 		{
 			view.SetAnimating(true);
+			if (_selectAckSeconds > 0f)
+			{
+				yield return new WaitForSeconds(_selectAckSeconds);
+			}
 
 			var dir = BlockView.DirectionToWorld(view.EscapeDirection);
 			var start = view.transform.localPosition;
 			var bump = start + dir.normalized * _bumpDistance;
-			view.ApplyPulseColor(new Color(1f, 0.35f, 0.35f));
+			view.ApplyPulseColor(new Color(1f, 0.32f, 0.32f));
 
-			var t = 0f;
+			// Total blocked feedback ~220ms (two halves).
 			var half = Mathf.Max(0.01f, _bumpDuration);
+			var t = 0f;
 			while (t < 1f)
 			{
 				t += Time.deltaTime / half;
@@ -287,9 +343,8 @@ namespace TapAway.Runtime
 
 		private static Color ColorFor(int id)
 		{
-			// Distinct, readable hues without relying on art assets.
 			var hue = (id * 0.137f) % 1f;
-			return Color.HSVToRGB(hue, 0.55f, 0.92f);
+			return Color.HSVToRGB(hue, 0.5f, 0.9f);
 		}
 	}
 }

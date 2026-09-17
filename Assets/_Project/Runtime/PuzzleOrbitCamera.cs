@@ -1,10 +1,11 @@
+using TapAway.Core;
 using UnityEngine;
 
 namespace TapAway.Runtime
 {
 	/// <summary>
-	/// Orbit camera around the puzzle pivot. Drag rotates; tap is handled elsewhere.
-	/// Avoids uncontrolled roll by separating yaw/pitch.
+	/// Orbit + pinch-zoom camera for puzzle inspection. No roll; yaw wraps naturally.
+	/// Framing uses <see cref="CameraFramingMath"/> (aspect-aware, Checkpoint-safe).
 	/// </summary>
 	public sealed class PuzzleOrbitCamera : MonoBehaviour
 	{
@@ -13,13 +14,24 @@ namespace TapAway.Runtime
 		[SerializeField] private float _yaw = 35f;
 		[SerializeField] private float _pitch = 25f;
 		[SerializeField] private float _distance = 8f;
-		[SerializeField] private float _minPitch = -80f;
-		[SerializeField] private float _maxPitch = 80f;
-		[SerializeField] private float _rotateSensitivity = 0.2f;
-		[SerializeField] private float _framePadding = 1.35f;
+		[SerializeField] private float _minPitch = -72f;
+		[SerializeField] private float _maxPitch = 72f;
+		[SerializeField] private float _rotateSensitivity = 0.18f;
+		[SerializeField] private float _framePadding = 1.42f;
+		[SerializeField] private float _minDistance = 3.5f;
+		[SerializeField] private float _maxDistance = 22f;
+		[SerializeField] private float _zoomSensitivity = 1f;
+		[SerializeField] private float _hudVerticalReserve = 0.08f;
+
+		private float _initialYaw;
+		private float _initialPitch;
+		private float _framedDistance = 8f;
 
 		public Transform Pivot => _pivot;
 		public Camera Camera => _camera != null ? _camera : Camera.main;
+		public float Distance => _distance;
+		public float Yaw => _yaw;
+		public float Pitch => _pitch;
 
 		private void Awake()
 		{
@@ -34,6 +46,8 @@ namespace TapAway.Runtime
 				_pivot = pivotGo.transform;
 			}
 
+			_initialYaw = _yaw;
+			_initialPitch = _pitch;
 			ApplyTransform();
 		}
 
@@ -49,27 +63,73 @@ namespace TapAway.Runtime
 		}
 
 		/// <summary>
-		/// Frames the given world bounds in a portrait-friendly orbit distance.
+		/// Pinch/mouse-wheel zoom. Factor &gt; 1 zooms out.
+		/// </summary>
+		public void ApplyZoomFactor(float factor)
+		{
+			if (factor <= 0.01f)
+			{
+				return;
+			}
+
+			// Invert common pinch intuition: fingers apart → zoom out (farther).
+			_distance *= Mathf.Pow(factor, _zoomSensitivity);
+			_distance = Mathf.Clamp(_distance, _minDistance, _maxDistance);
+			ApplyTransform();
+		}
+
+		public void ApplyScrollZoom(float scrollY)
+		{
+			if (Mathf.Abs(scrollY) < 0.01f)
+			{
+				return;
+			}
+
+			var factor = 1f - scrollY * 0.1f;
+			ApplyZoomFactor(factor);
+		}
+
+		/// <summary>
+		/// Frames world bounds using aspect-aware FOV math with HUD reserve padding.
 		/// </summary>
 		public void FrameBounds(Bounds bounds)
 		{
 			_pivot.position = bounds.center;
-			var extents = bounds.extents.magnitude;
-			if (extents < 0.01f)
-			{
-				extents = 2f;
-			}
+			var radius = CameraFramingMath.RadiusFromExtents(
+				bounds.extents.x,
+				bounds.extents.y,
+				bounds.extents.z);
 
 			var cam = Camera;
 			var vFov = cam != null ? cam.fieldOfView : 60f;
-			var verticalHalf = Mathf.Max(0.1f, vFov * 0.5f) * Mathf.Deg2Rad;
-			var aspect = cam != null ? Mathf.Max(0.01f, cam.aspect) : 1f;
-			var horizontalHalf = Mathf.Atan(Mathf.Tan(verticalHalf) * aspect);
-			var half = Mathf.Min(verticalHalf, horizontalHalf);
-			// Extra padding leaves room for future HUD / bottom safe area.
-			_distance = (extents / Mathf.Sin(half)) * _framePadding;
-			_distance = Mathf.Clamp(_distance, 4f, 24f);
+			var aspect = cam != null ? Mathf.Max(0.01f, cam.aspect) : (9f / 16f);
+			var padding = _framePadding + _hudVerticalReserve;
+			_distance = CameraFramingMath.ComputeOrbitDistance(
+				radius,
+				vFov,
+				aspect,
+				padding,
+				_minDistance,
+				_maxDistance);
+			_framedDistance = _distance;
 			ApplyTransform();
+		}
+
+		/// <summary>
+		/// Restores yaw/pitch/distance captured at the last FrameBounds call.
+		/// </summary>
+		public void ResetToFramedView()
+		{
+			_yaw = _initialYaw;
+			_pitch = _initialPitch;
+			_distance = _framedDistance;
+			ApplyTransform();
+		}
+
+		public void CaptureInitialAngles()
+		{
+			_initialYaw = _yaw;
+			_initialPitch = _pitch;
 		}
 
 		private void ApplyTransform()
@@ -78,6 +138,12 @@ namespace TapAway.Runtime
 			if (cam == null || _pivot == null)
 			{
 				return;
+			}
+
+			// Normalize yaw for stability without restricting orbit freedom.
+			if (_yaw > 360f || _yaw < -360f)
+			{
+				_yaw = Mathf.Repeat(_yaw + 180f, 360f) - 180f;
 			}
 
 			var rotation = Quaternion.Euler(_pitch, _yaw, 0f);

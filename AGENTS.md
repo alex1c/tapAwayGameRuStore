@@ -1,4 +1,4 @@
-# AGENTS.md вЂ” Tap Away
+# AGENTS.md — Tap Away
 
 Brief for Cursor and Codex working on this repository.
 
@@ -7,7 +7,7 @@ Brief for Cursor and Codex working on this repository.
 - Working title: **Tap Away** / **Block Escape**
 - Stack: **Unity + C#**
 - Store: **Android / RuStore**
-- Phase 0: foundation only вЂ” **no gameplay**
+- Phase 2: mobile gameplay feel / camera / input / presentation
 
 ## Source of truth
 
@@ -42,12 +42,12 @@ Exact editor: **6000.3.22f1** (Unity 6.3 LTS) on both machines.
 
 ## Assemblies
 
-- `TapAway.Core` вЂ” pure C# (`noEngineReferences`)
-- `TapAway.Runtime` вЂ” Unity presentation
-- `TapAway.Core.Tests` вЂ” EditMode
-- `TapAway.PlayMode.Tests` вЂ” PlayMode
+- `TapAway.Core` — pure C# (`noEngineReferences`)
+- `TapAway.Runtime` — Unity presentation
+- `TapAway.Core.Tests` — EditMode
+- `TapAway.PlayMode.Tests` — PlayMode
 
 ## Stop conditions
 
 After completing an assigned phase, **stop**. Do not start the next phase
-(mechanics, solver, ads, polish, etc.) until asked.
+until asked.

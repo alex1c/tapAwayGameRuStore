@@ -15,7 +15,7 @@ Do not treat either PC workdir as source of truth.
 
 ## Stack
 
-- **Engine:** Unity **6000.3.22f1** (Unity 6.3 LTS) вЂ” required on both PCs
+- **Engine:** Unity **6000.3.22f1** (Unity 6.3 LTS) РІР‚вЂќ required on both PCs
 - **Language:** C#
 - **Template:** Minimal 3D (Built-in Render Pipeline)
 - **Target:** Android / RuStore, **Portrait**
@@ -24,8 +24,8 @@ Do not treat either PC workdir as source of truth.
 ## Workflow
 
 ```text
-Cursor (implement phase) в†’ push GitHub в†’ Codex pull / checkpoint audit
-  в†’ Android real-device QA when required в†’ report в†’ next phase
+Cursor (implement phase) РІвЂ вЂ™ push GitHub РІвЂ вЂ™ Codex pull / checkpoint audit
+  РІвЂ вЂ™ Android real-device QA when required РІвЂ вЂ™ report РІвЂ вЂ™ next phase
 ```
 
 Before switching PCs:
@@ -62,9 +62,9 @@ Assets/_Project/
 
 ## Docs
 
-- `PROJECT_PLAYBOOK.md` вЂ” ForestMusic-adapted Unity rules
-- `AGENTS.md` вЂ” Cursor / Codex agent brief
+- `PROJECT_PLAYBOOK.md` РІР‚вЂќ ForestMusic-adapted Unity rules
+- `AGENTS.md` РІР‚вЂќ Cursor / Codex agent brief
 
 ## Phase status
 
-**PHASE 0 вЂ” Unity foundation** (no gameplay).
+**PHASE 0 РІР‚вЂќ Unity foundation** (no gameplay).

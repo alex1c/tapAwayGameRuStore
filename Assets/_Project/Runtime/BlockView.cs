@@ -54,6 +54,14 @@ namespace TapAway.Runtime
 			IsAnimating = value;
 		}
 
+		/// <summary>
+		/// Immediate selection acknowledgement before move feedback.
+		/// </summary>
+		public void PlaySelectFlash()
+		{
+			ApplyColor(Color.Lerp(_baseColor, Color.white, 0.55f));
+		}
+
 		public void ApplyPulseColor(Color color)
 		{
 			ApplyColor(color);
@@ -62,6 +70,26 @@ namespace TapAway.Runtime
 		public void RestoreBaseColor()
 		{
 			ApplyColor(_baseColor);
+		}
+
+		public void SetHighlighted(bool highlighted)
+		{
+			if (highlighted)
+			{
+				ApplyColor(Color.Lerp(_baseColor, new Color(1f, 0.95f, 0.4f), 0.45f));
+				if (_arrowRoot != null)
+				{
+					_arrowRoot.localScale = Vector3.one * 1.15f;
+				}
+			}
+			else
+			{
+				RestoreBaseColor();
+				if (_arrowRoot != null)
+				{
+					_arrowRoot.localScale = Vector3.one;
+				}
+			}
 		}
 
 		public void Hide()
