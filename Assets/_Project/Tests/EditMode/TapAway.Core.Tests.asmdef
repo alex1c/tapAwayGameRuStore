@@ -2,9 +2,7 @@
     "name": "TapAway.Core.Tests",
     "rootNamespace": "TapAway.Core.Tests",
     "references": [
-        "TapAway.Core",
-        "UnityEngine.TestRunner",
-        "UnityEditor.TestRunner"
+        "TapAway.Core"
     ],
     "includePlatforms": [
         "Editor"

@@ -3,9 +3,7 @@
     "rootNamespace": "TapAway.PlayMode.Tests",
     "references": [
         "TapAway.Core",
-        "TapAway.Runtime",
-        "UnityEngine.TestRunner",
-        "UnityEditor.TestRunner"
+        "TapAway.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -1,0 +1,19 @@
+{
+    "name": "TapAway.Editor",
+    "rootNamespace": "TapAway.Editor",
+    "references": [
+        "TapAway.Core",
+        "TapAway.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
