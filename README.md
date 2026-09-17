@@ -15,17 +15,17 @@ Do not treat either PC workdir as source of truth.
 
 ## Stack
 
-- **Engine:** Unity **6000.3.22f1** (Unity 6.3 LTS) — required on both PCs
+- **Engine:** Unity **6000.3.22f1** (Unity 6.3 LTS) вЂ” required on both PCs
 - **Language:** C#
 - **Template:** Minimal 3D (Built-in Render Pipeline)
 - **Target:** Android / RuStore, **Portrait**
-- **Proposed package:** `com.calculatorplatform.tapaway` (proposed until confirmed)
+- **Package:** `com.calculatorplatform.tapaway` (locked)
 
 ## Workflow
 
 ```text
-Cursor (implement phase) → push GitHub → Codex pull / checkpoint audit
-  → Android real-device QA when required → report → next phase
+Cursor (implement phase) в†’ push GitHub в†’ Codex pull / checkpoint audit
+  в†’ Android real-device QA when required в†’ report в†’ next phase
 ```
 
 Before switching PCs:
@@ -62,9 +62,9 @@ Assets/_Project/
 
 ## Docs
 
-- `PROJECT_PLAYBOOK.md` — ForestMusic-adapted Unity rules
-- `AGENTS.md` — Cursor / Codex agent brief
+- `PROJECT_PLAYBOOK.md` вЂ” ForestMusic-adapted Unity rules
+- `AGENTS.md` вЂ” Cursor / Codex agent brief
 
 ## Phase status
 
-**PHASE 0 — Unity foundation** (no gameplay).
+**PHASE 0 вЂ” Unity foundation** (no gameplay).

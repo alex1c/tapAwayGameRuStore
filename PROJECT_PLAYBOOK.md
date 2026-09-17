@@ -1,4 +1,4 @@
-# Tap Away — Project Playbook
+# Tap Away вЂ” Project Playbook
 
 Adapted from ForestMusic Dev Playbook (`FORESTMUSIC_DEV_PLAYBOOK.md`, 2026-09-10)
 for Unity + C# / Android / RuStore. RN/Expo/Skia-specific rules are not carried over.
@@ -12,7 +12,7 @@ Version: 2026-09-17 (Phase 0)
 - Cursor owns large implementation phases; Codex owns independent checkpoint audits
   and Android runtime/release QA.
 - GitHub is the only source of truth.
-- Serious defect flow: root cause → fix → regression test → playbook note.
+- Serious defect flow: root cause в†’ fix в†’ regression test в†’ playbook note.
 - Onboarding / training remains required in shipped apps (later phases).
 
 ## 2. Git and directories
@@ -33,7 +33,7 @@ Version: 2026-09-17 (Phase 0)
 
 - **Required editor:** Unity **6000.3.22f1** (Unity 6.3 LTS).
 - Same exact version on both PCs.
-- Prefer Unity Hub–managed Android Build Support, SDK, NDK, OpenJDK.
+- Prefer Unity HubвЂ“managed Android Build Support, SDK, NDK, OpenJDK.
 - Do not use beta / alpha / tech-stream for novelty.
 
 ## 4. Architecture
@@ -48,7 +48,7 @@ Version: 2026-09-17 (Phase 0)
 ## 5. Android / RuStore QA
 
 - Target platform: Android / RuStore, orientation **Portrait**.
-- Proposed application id: `com.calculatorplatform.tapaway` (confirm before lock).
+- Application id: `com.calculatorplatform.tapaway` (locked).
 - AVD is useful for smoke; it is **not** sufficient for bottom safe-area QA.
 - Important CTAs / bottom UI must sit above system gesture / navigation insets.
 - Before release, verify key bottom CTAs on at least one physical Android phone.
@@ -71,13 +71,13 @@ Version: 2026-09-17 (Phase 0)
 
 ## 8. Screenshots (later)
 
-- RuStore shots: strictly **1080×1920**, **9:16**.
+- RuStore shots: strictly **1080Г—1920**, **9:16**.
 - Crop/resize without distortion; verify dimensions programmatically.
 
 ## 9. Release order (later)
 
-Functionality → UX → naming → icon → ads/analytics → native checkpoint →
-privacy → screenshots → release artifacts → production signing → final AAB →
+Functionality в†’ UX в†’ naming в†’ icon в†’ ads/analytics в†’ native checkpoint в†’
+privacy в†’ screenshots в†’ release artifacts в†’ production signing в†’ final AAB в†’
 RuStore upload.
 
 ## 10. Production signing
@@ -89,7 +89,7 @@ RuStore upload.
   `D:\PetProject\secure\android-signing\<repo>\`
   (or `D:\secure\android-signing\<repo>\` when that path exists).
 - After release builds: verify alias, cert SHA1/SHA256, and AAB SHA256.
-- Fingerprint mismatch → **STOP**.
+- Fingerprint mismatch в†’ **STOP**.
 
 ## 11. Permissions / store honesty (later)
 
@@ -101,12 +101,12 @@ RuStore upload.
 ## 12. Backup / persistence (later, if applicable)
 
 - Prefer versioned manifests and portable representations.
-- Missing files → fallback, never crash.
+- Missing files в†’ fallback, never crash.
 - Protect archives against path traversal.
 
 ## 13. Failure / retry policy
 
-- Do not “fix” issues by inventing a new editor install path, new signing key,
+- Do not вЂњfixвЂќ issues by inventing a new editor install path, new signing key,
   new package id, or new architecture until root cause is proven.
 - Root cause first; minimal change second.
 - After a serious bug: add a regression test when practical.
