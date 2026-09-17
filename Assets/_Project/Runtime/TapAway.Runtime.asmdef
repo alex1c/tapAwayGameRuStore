@@ -1,0 +1,16 @@
+{
+    "name": "TapAway.Runtime",
+    "rootNamespace": "TapAway.Runtime",
+    "references": [
+        "TapAway.Core"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
