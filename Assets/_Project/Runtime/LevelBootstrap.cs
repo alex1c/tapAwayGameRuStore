@@ -18,6 +18,14 @@ namespace TapAway.Runtime
 		[SerializeField] private PuzzleLighting _lighting;
 		[SerializeField] private Camera _camera;
 		[SerializeField] private bool _showTutorial = true;
+		[SerializeField] private int _devPreviewSeed;
+		[SerializeField] private bool _loadGeneratedPreview;
+
+		/// <summary>
+		/// Optional runtime override set by Editor harness / debug tools.
+		/// When set, bootstrap loads this generated level instead of the prototype.
+		/// </summary>
+		public static GeneratedLevel DevOverrideLevel { get; set; }
 
 		private PuzzleLevel _level;
 		private PuzzleState _state;
@@ -27,7 +35,9 @@ namespace TapAway.Runtime
 		public PuzzleState State => _state;
 		public TutorialState Tutorial => _tutorialState;
 		public VictoryOverlay Victory => _victory;
+		public PuzzleLevel Level => _level;
 		public int ExpectedBlockCount => _level != null ? _level.Blocks.Count : 0;
+		public int DevPreviewSeed => _devPreviewSeed;
 
 		private void Awake()
 		{
@@ -48,9 +58,39 @@ namespace TapAway.Runtime
 			StartLevel(resetTutorial: false);
 		}
 
+		/// <summary>
+		/// Loads a generated level by seed into the live presentation (dev/QA).
+		/// </summary>
+		public bool TryLoadGeneratedSeed(int seed, GeneratorConfig config = null)
+		{
+			var result = GenerationPipeline.Generate(seed, config ?? GeneratorConfig.Small());
+			if (!result.Accepted || result.Level == null)
+			{
+				Debug.LogWarning("[TapAway] Generate seed " + seed + " rejected: " +
+				                 result.RejectionReason + " " + result.Detail);
+				return false;
+			}
+
+			DevOverrideLevel = result.Level;
+			_devPreviewSeed = seed;
+			_loadGeneratedPreview = true;
+			Restart();
+			return true;
+		}
+
+		/// <summary>
+		/// Clears generated override and returns to the Phase 1 prototype fixture.
+		/// </summary>
+		public void LoadPrototype()
+		{
+			DevOverrideLevel = null;
+			_loadGeneratedPreview = false;
+			Restart();
+		}
+
 		private void StartLevel(bool resetTutorial)
 		{
-			_level = Phase1PrototypeLevel.Create();
+			_level = ResolveLevel();
 			_state = _level.CreateState();
 
 			_presenter.Initialize(
@@ -68,20 +108,43 @@ namespace TapAway.Runtime
 
 			if (resetTutorial)
 			{
-				_tutorialState = new TutorialState(_showTutorial);
+				_tutorialState = new TutorialState(_showTutorial && DevOverrideLevel == null);
 			}
 			else if (_tutorialState == null || _tutorialState.IsCompleted || _tutorialState.IsSkipped)
 			{
 				_tutorialState = new TutorialState(false);
 			}
 
+			var hintId = _level.Blocks.Count > 0 ? _level.Blocks[0].Id : new BlockId(1);
 			_tutorial?.Configure(
 				_tutorialState,
 				_presenter,
-				new BlockId(1),
+				hintId,
 				null);
 
 			_debugHud?.Bind(_state);
+		}
+
+		private PuzzleLevel ResolveLevel()
+		{
+			if (DevOverrideLevel != null)
+			{
+				return DevOverrideLevel.ToPuzzleLevel();
+			}
+
+			if (_loadGeneratedPreview && _devPreviewSeed != 0)
+			{
+				var generated = GenerationPipeline.Generate(_devPreviewSeed, GeneratorConfig.Small());
+				if (generated.Accepted)
+				{
+					DevOverrideLevel = generated.Level;
+					return generated.Level.ToPuzzleLevel();
+				}
+
+				Debug.LogWarning("[TapAway] Serialized preview seed rejected; falling back to prototype.");
+			}
+
+			return Phase1PrototypeLevel.Create();
 		}
 
 		private void OnMoveResolved(MoveResult result)

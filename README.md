@@ -67,4 +67,10 @@ Assets/_Project/
 
 ## Phase status
 
-**PHASE 0 РІР‚вЂќ Unity foundation** (no gameplay).
+**PHASE 3** — solver / reverse generator / level quality / difficulty V1.  
+See [Docs/PHASE3_CONTENT_PIPELINE.md](Docs/PHASE3_CONTENT_PIPELINE.md).
+
+## Phase 3
+
+See [Docs/PHASE3_CONTENT_PIPELINE.md](Docs/PHASE3_CONTENT_PIPELINE.md).
+

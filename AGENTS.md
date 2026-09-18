@@ -7,7 +7,7 @@ Brief for Cursor and Codex working on this repository.
 - Working title: **Tap Away** / **Block Escape**
 - Stack: **Unity + C#**
 - Store: **Android / RuStore**
-- Phase 2: mobile gameplay feel / camera / input / presentation
+- Phase 3: solver / reverse generator / level quality / difficulty V1
 
 ## Source of truth
 

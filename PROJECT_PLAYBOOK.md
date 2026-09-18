@@ -43,7 +43,8 @@ Version: 2026-09-17 (Phase 0)
 - Puzzle rules must not depend on Renderer, Camera, UI, Ads, Analytics, or
   MonoBehaviour lifecycle beyond thin adapters.
 - Every level must be beatable without ads, rewarded ads, IAP, or boosters.
-- A solver/validator (future) must prove solvability.
+- Solver / generator / level-quality / difficulty V1 live in `TapAway.Core`
+  (see `Docs/PHASE3_CONTENT_PIPELINE.md`).
 
 ## 5. Android / RuStore QA
 

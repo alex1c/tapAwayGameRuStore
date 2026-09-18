@@ -18,9 +18,9 @@ namespace TapAway.Core.Tests
 		}
 
 		[Test]
-		public void Phase_IsFoundationMarker()
+		public void Phase_IsSolverGeneratorMarker()
 		{
-			Assert.That(FoundationInfo.Phase, Is.EqualTo("PHASE_0_FOUNDATION"));
+			Assert.That(FoundationInfo.Phase, Is.EqualTo("PHASE_3_SOLVER_GENERATOR"));
 		}
 	}
 }

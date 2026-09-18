@@ -3,7 +3,6 @@ namespace TapAway.Core
 	/// <summary>
 	/// Tiny pure-C# foundation marker used to prove Core is testable
 	/// without UnityEngine / MonoBehaviour dependencies.
-	/// Puzzle models will live in this assembly in later phases.
 	/// </summary>
 	public static class FoundationInfo
 	{
@@ -13,12 +12,11 @@ namespace TapAway.Core
 		/// <summary>Alternate working title kept for branding experiments.</summary>
 		public const string AlternateProductName = "Block Escape";
 
-		/// <summary>Foundation phase marker; bump only with intentional phase changes.</summary>
-		public const string Phase = "PHASE_0_FOUNDATION";
+		/// <summary>Current content-pipeline phase marker.</summary>
+		public const string Phase = "PHASE_3_SOLVER_GENERATOR";
 
 		/// <summary>
 		/// Returns a stable, human-readable label for bootstrap / QA checks.
-		/// Kept free of Unity types so EditMode tests can assert it directly.
 		/// </summary>
 		public static string GetBootstrapLabel()
 		{
