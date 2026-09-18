@@ -86,11 +86,19 @@ namespace TapAway.Core
 			}
 
 			var limit = Math.Min(maxAlternates, legal.Count - 1);
-			for (var alt = 1; alt <= limit; alt++)
+			for (var sample = 0; sample < limit; sample++)
 			{
 				var mask = full.Clone();
 				var solution = new List<int>(ordered.Length);
-				var pick = legal[alt];
+				// Spread a bounded sample across the complete first-move choice set.
+				// The old contiguous 2nd/3rd/... sample could miss poor paths later
+				// in a wide choice set while still reporting the level as quality-safe.
+				var pickOffset = limit == 1
+					? 1
+					: 1 + (int)System.Math.Round(
+						(legal.Count - 2) * (double)sample / (limit - 1),
+						MidpointRounding.AwayFromZero);
+				var pick = legal[pickOffset];
 				solution.Add(ordered[pick].Id.Value);
 				mask.Clear(pick);
 

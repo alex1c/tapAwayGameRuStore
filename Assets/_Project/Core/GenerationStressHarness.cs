@@ -36,22 +36,24 @@ namespace TapAway.Core
 			var report = new StressReport();
 			var sw = Stopwatch.StartNew();
 			var bandExamples = new Dictionary<DifficultyBand, int>();
+			var bandExampleConfigs = new Dictionary<DifficultyBand, GeneratorConfig>();
 
-			RunBucket(report, baseSeed + 40000, 100, GeneratorConfig.Tiny(), bandExamples);
-			RunBucket(report, baseSeed + 0, 350, GeneratorConfig.Small(), bandExamples);
-			RunBucket(report, baseSeed + 10000, 300, GeneratorConfig.Medium(), bandExamples);
-			RunBucket(report, baseSeed + 20000, 200, GeneratorConfig.Large(), bandExamples);
-			RunBucket(report, baseSeed + 30000, 50, GeneratorConfig.StressOver64(), bandExamples);
+			RunBucket(report, baseSeed + 40000, 100, GeneratorConfig.Tiny(), bandExamples, bandExampleConfigs);
+			RunBucket(report, baseSeed + 0, 350, GeneratorConfig.Small(), bandExamples, bandExampleConfigs);
+			RunBucket(report, baseSeed + 10000, 300, GeneratorConfig.Medium(), bandExamples, bandExampleConfigs);
+			RunBucket(report, baseSeed + 20000, 200, GeneratorConfig.Large(), bandExamples, bandExampleConfigs);
+			RunBucket(report, baseSeed + 30000, 50, GeneratorConfig.StressOver64(), bandExamples, bandExampleConfigs);
 
-			// Reproducibility: re-generate first accepted small seed if any.
+			// Reproducibility: re-generate the first accepted example in each band.
 			report.ReproducibilityOk = true;
 			if (bandExamples.Count > 0)
 			{
 				foreach (var pair in bandExamples)
 				{
 					report.ExampleSeedsByBand.Add(pair.Value);
-					var a = GenerationPipeline.Generate(pair.Value, GeneratorConfig.Small());
-					var b = GenerationPipeline.Generate(pair.Value, GeneratorConfig.Small());
+					var config = bandExampleConfigs[pair.Key];
+					var a = GenerationPipeline.Generate(pair.Value, config);
+					var b = GenerationPipeline.Generate(pair.Value, config);
 					if (!a.Accepted || !b.Accepted || a.Level.Blocks.Count != b.Level.Blocks.Count)
 					{
 						report.ReproducibilityOk = false;
@@ -89,7 +91,8 @@ namespace TapAway.Core
 			int seedStart,
 			int count,
 			GeneratorConfig config,
-			Dictionary<DifficultyBand, int> bandExamples)
+			Dictionary<DifficultyBand, int> bandExamples,
+			Dictionary<DifficultyBand, GeneratorConfig> bandExampleConfigs)
 		{
 			for (var i = 0; i < count; i++)
 			{
@@ -121,6 +124,7 @@ namespace TapAway.Core
 					if (!bandExamples.ContainsKey(result.Level.Difficulty.Band))
 					{
 						bandExamples[result.Level.Difficulty.Band] = seed;
+						bandExampleConfigs[result.Level.Difficulty.Band] = config;
 					}
 				}
 				else

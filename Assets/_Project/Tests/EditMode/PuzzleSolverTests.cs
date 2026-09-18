@@ -168,6 +168,23 @@ namespace TapAway.Core.Tests
 		}
 
 		[Test]
+		public void AlternateSampling_SpreadsAcrossWideFirstChoiceSet()
+		{
+			var blocks = new List<PuzzleBlock>();
+			for (var i = 0; i < 9; i++)
+			{
+				blocks.Add(new PuzzleBlock(i + 1, 0, i, 0, EscapeDirection.PosX));
+			}
+
+			var alts = PuzzleSolver.SampleAlternateSolutions(blocks, 3);
+
+			Assert.That(alts.Count, Is.EqualTo(3));
+			Assert.That(alts[0][0], Is.EqualTo(2));
+			Assert.That(alts[1][0], Is.EqualTo(6));
+			Assert.That(alts[2][0], Is.EqualTo(9));
+		}
+
+		[Test]
 		public void Monotonic_LegalRemovalPreservesSolvability_OnFixtures()
 		{
 			Assert.That(
