@@ -34,7 +34,11 @@ namespace TapAway.PlayMode.Tests
 					DirectionReadabilityValidator.HasExpectedMultiFaceCoverage(indicator, direction),
 					Is.True,
 					"Coverage failed for " + direction);
-				Assert.That(indicator.childCount, Is.EqualTo(DirectionIndicatorBuilder.ExpectedPartCount));
+				Assert.That(
+					DirectionIndicatorBuilder.HeadIsAlongEscape(indicator, direction),
+					Is.True,
+					"Head/tail reversed for " + direction);
+				Assert.That(DirectionReadabilityValidator.HasPrimaryArrowParts(indicator), Is.True);
 
 				Object.Destroy(indicator.gameObject);
 			}

@@ -4,18 +4,16 @@ using UnityEngine;
 namespace TapAway.Runtime
 {
 	/// <summary>
-	/// Builds a direction glyph readable from multiple viewing angles.
-	/// All parts encode the SAME world-space <see cref="EscapeDirection"/>.
-	/// Uses Unlit materials so readability does not depend on lighting.
+	/// Direction UX V2: clear asymmetric arrow (shaft + triangular head).
+	/// Optionally places one camera-facing face glyph encoding the SAME EscapeDirection.
 	/// </summary>
 	public static class DirectionIndicatorBuilder
 	{
-		/// <summary>Expected child part count: shaft, head, plate, 4×(chevron+plate), tail.</summary>
-		public const int ExpectedPartCount = 12;
+		/// <summary>Primary 3D arrow parts: Shaft, Head, HeadWingL, HeadWingR, Tail.</summary>
+		public const int PrimaryPartCount = 5;
 
 		/// <summary>
-		/// Creates a through-shaft + escape-face head + lateral face chevrons.
-		/// Local block axes match the puzzle grid (no block yaw).
+		/// Builds a clear ----&gt; style arrow along world escape, plus a face-glyph holder.
 		/// </summary>
 		public static Transform Build(
 			Transform parent,
@@ -32,53 +30,62 @@ namespace TapAway.Runtime
 			var escape = new Vector3(dx, dy, dz);
 			var look = SafeLook(escape);
 
-			// Through-shaft: silhouette readable from side views even if head faces away.
+			// Thin shaft — tail end toward -escape, head end toward +escape.
 			CreateCube(
 				root.transform,
-				"ThroughShaft",
-				escape * 0.08f,
+				"Shaft",
+				escape * 0.05f,
 				look,
-				new Vector3(0.14f, 0.14f, 0.92f),
+				new Vector3(0.11f, 0.11f, 0.55f),
 				accentMaterial);
 
-			// Head on the escape face (primary 3D arrow tip).
+			// Triangular head: center wedge + two wings (strong head/tail asymmetry).
+			var headBase = escape * 0.42f;
 			CreateCube(
 				root.transform,
 				"Head",
-				escape * 0.58f,
-				look * Quaternion.Euler(0f, 0f, 45f),
-				new Vector3(0.34f, 0.12f, 0.34f),
+				headBase + escape * 0.08f,
+				look,
+				new Vector3(0.08f, 0.08f, 0.22f),
 				accentMaterial);
 
-			// Raised plate behind head for contrast on the escape face.
 			CreateCube(
 				root.transform,
-				"EscapePlate",
-				escape * 0.52f,
-				look,
-				new Vector3(0.42f, 0.08f, 0.42f),
-				plateMaterial);
+				"HeadWingL",
+				headBase,
+				look * Quaternion.Euler(0f, 0f, 35f),
+				new Vector3(0.28f, 0.07f, 0.14f),
+				accentMaterial);
 
-			// Lateral face chevrons: each points toward the SAME escape axis.
-			foreach (var lateral in GetLateralAxes(escape))
-			{
-				CreateLateralChevron(root.transform, escape, lateral, plateMaterial, accentMaterial);
-			}
+			CreateCube(
+				root.transform,
+				"HeadWingR",
+				headBase,
+				look * Quaternion.Euler(0f, 0f, -35f),
+				new Vector3(0.28f, 0.07f, 0.14f),
+				accentMaterial);
 
-			// Opposite-face tail mark so the back side still shows orientation.
+			// Small dark tail stub so reverse end is obvious.
 			CreateCube(
 				root.transform,
 				"Tail",
-				-escape * 0.52f,
+				-escape * 0.28f,
 				look,
-				new Vector3(0.2f, 0.2f, 0.08f),
+				new Vector3(0.16f, 0.16f, 0.08f),
 				plateMaterial);
+
+			// Empty holder for optional camera-facing face glyph (updated at runtime).
+			var faceGlyph = new GameObject("FaceGlyph");
+			faceGlyph.transform.SetParent(root.transform, false);
+
+			var aware = root.AddComponent<CameraAwareDirectionIndicator>();
+			aware.Configure(direction, plateMaterial, accentMaterial);
 
 			return root.transform;
 		}
 
 		/// <summary>
-		/// LookRotation that stays stable when escape is parallel to world up.
+		/// LookRotation stable when escape is parallel to world up.
 		/// </summary>
 		public static Quaternion SafeLook(Vector3 forward)
 		{
@@ -89,51 +96,63 @@ namespace TapAway.Runtime
 			return Quaternion.LookRotation(f, up);
 		}
 
-		private static void CreateLateralChevron(
-			Transform parent,
+		/// <summary>
+		/// Projects world escape onto a face plane; returns false if nearly parallel to normal.
+		/// </summary>
+		public static bool TryProjectEscapeOntoFace(
 			Vector3 escape,
-			Vector3 lateral,
-			Material plateMaterial,
-			Material accentMaterial)
+			Vector3 faceNormal,
+			out Vector3 onFace)
 		{
-			var faceCenter = lateral * 0.52f;
-			// Use lateral as the local "up" so the chevron sits on that face.
-			var look = Quaternion.LookRotation(escape, lateral);
-
-			CreateCube(
-				parent,
-				"ChevronPlate",
-				faceCenter,
-				look,
-				new Vector3(0.36f, 0.06f, 0.5f),
-				plateMaterial);
-
-			// Wedge tip toward escape on this face.
-			CreateCube(
-				parent,
-				"Chevron",
-				faceCenter + escape * 0.12f + lateral * 0.02f,
-				look * Quaternion.Euler(0f, 0f, 45f),
-				new Vector3(0.22f, 0.08f, 0.22f),
-				accentMaterial);
-		}
-
-		private static Vector3[] GetLateralAxes(Vector3 escape)
-		{
-			if (Mathf.Abs(escape.x) > 0.5f)
+			escape = escape.normalized;
+			faceNormal = faceNormal.normalized;
+			onFace = escape - faceNormal * Vector3.Dot(escape, faceNormal);
+			if (onFace.sqrMagnitude < 0.05f)
 			{
-				return new[] { Vector3.up, Vector3.down, Vector3.forward, Vector3.back };
+				onFace = Vector3.zero;
+				return false;
 			}
 
-			if (Mathf.Abs(escape.y) > 0.5f)
-			{
-				return new[] { Vector3.right, Vector3.left, Vector3.forward, Vector3.back };
-			}
-
-			return new[] { Vector3.right, Vector3.left, Vector3.up, Vector3.down };
+			onFace.Normalize();
+			return true;
 		}
 
-		private static GameObject CreateCube(
+		/// <summary>
+		/// True when head lies further along escape than tail (semantic check).
+		/// </summary>
+		public static bool HeadIsAlongEscape(Transform indicator, EscapeDirection direction)
+		{
+			if (indicator == null)
+			{
+				return false;
+			}
+
+			EscapeDirectionUtil.GetStep(direction, out var dx, out var dy, out var dz);
+			var escape = new Vector3(dx, dy, dz);
+			Transform head = null;
+			Transform tail = null;
+			for (var i = 0; i < indicator.childCount; i++)
+			{
+				var child = indicator.GetChild(i);
+				if (child.name == "Head")
+				{
+					head = child;
+				}
+				else if (child.name == "Tail")
+				{
+					tail = child;
+				}
+			}
+
+			if (head == null || tail == null)
+			{
+				return false;
+			}
+
+			return Vector3.Dot(head.localPosition, escape) > Vector3.Dot(tail.localPosition, escape);
+		}
+
+		public static GameObject CreateCube(
 			Transform parent,
 			string name,
 			Vector3 localPos,
