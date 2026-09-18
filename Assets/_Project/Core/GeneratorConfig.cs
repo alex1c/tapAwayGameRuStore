@@ -5,7 +5,7 @@ namespace TapAway.Core
 	/// <summary>Versioned generator settings (no scattered magic numbers).</summary>
 	public sealed class GeneratorConfig
 	{
-		public const string GeneratorVersion = "1.0.0";
+		public const string GeneratorVersion = "1.1.0";
 
 		public int TargetBlockCount { get; set; } = 16;
 		public int MinX { get; set; } = -4;
