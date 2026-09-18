@@ -133,5 +133,75 @@ namespace TapAway.Editor
 
 			EditorApplication.Exit(summary.result == BuildResult.Succeeded ? 0 : 1);
 		}
+
+		/// <summary>
+		/// Menu / batch helper: builds indicators for all six directions and
+		/// validates multi-face readability geometry without pixel tests.
+		/// </summary>
+		[MenuItem("TapAway/Validate Direction Readability")]
+		public static void ValidateDirectionReadabilityMenu()
+		{
+			var report = ValidateDirectionReadabilityInternal();
+			Debug.Log("[DirectionReadability]\n" + report);
+			if (Application.isBatchMode)
+			{
+				Directory.CreateDirectory("Logs");
+				File.WriteAllText("Logs/direction-readability.txt", report);
+				EditorApplication.Exit(report.StartsWith("PASS", StringComparison.Ordinal) ? 0 : 1);
+			}
+		}
+
+		/// <summary>
+		/// Batchmode entry: TapAway.Editor.Phase0Verify.ValidateDirectionReadabilityMenu
+		/// </summary>
+		public static void ValidateDirectionReadabilityBatch()
+		{
+			ValidateDirectionReadabilityMenu();
+		}
+
+		private static string ValidateDirectionReadabilityInternal()
+		{
+			var root = new GameObject("DirectionReadabilityProbe");
+			try
+			{
+				var plate = new Material(Shader.Find("Unlit/Color") ?? Shader.Find("Sprites/Default"))
+				{
+					color = new Color(0.05f, 0.05f, 0.07f, 1f)
+				};
+				var accent = new Material(Shader.Find("Unlit/Color") ?? Shader.Find("Sprites/Default"))
+				{
+					color = new Color(1f, 0.92f, 0.12f, 1f)
+				};
+
+				var views = new System.Collections.Generic.List<TapAway.Runtime.BlockView>();
+				var id = 1;
+				foreach (TapAway.Core.EscapeDirection direction in Enum.GetValues(typeof(TapAway.Core.EscapeDirection)))
+				{
+					var blockGo = new GameObject("ProbeBlock_" + id);
+					blockGo.transform.SetParent(root.transform, false);
+					var indicator = TapAway.Runtime.DirectionIndicatorBuilder.Build(
+						blockGo.transform,
+						direction,
+						plate,
+						accent);
+					var body = GameObject.CreatePrimitive(PrimitiveType.Cube);
+					body.transform.SetParent(blockGo.transform, false);
+					UnityEngine.Object.DestroyImmediate(body.GetComponent<Collider>());
+					var view = blockGo.AddComponent<TapAway.Runtime.BlockView>();
+					view.SetVisualParts(indicator, body.GetComponent<Renderer>());
+					view.Bind(
+						new TapAway.Core.PuzzleBlock(id, 0, 0, 0, direction),
+						Color.cyan);
+					views.Add(view);
+					id++;
+				}
+
+				return TapAway.Runtime.DirectionReadabilityValidator.ValidateActiveViews(views);
+			}
+			finally
+			{
+				UnityEngine.Object.DestroyImmediate(root);
+			}
+		}
 	}
 }

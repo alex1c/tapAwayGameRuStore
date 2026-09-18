@@ -22,8 +22,13 @@ namespace TapAway.PlayMode.Tests
 			var view = bootstrap.Presenter.GetView(new TapAway.Core.BlockId(11));
 			Assert.That(view, Is.Not.Null);
 
-			var arrow = view.transform.Find("Arrow");
-			Assert.That(arrow, Is.Not.Null);
+			var arrow = DirectionReadabilityValidator.FindIndicator(view.transform);
+			Assert.That(arrow, Is.Not.Null, "Expected DirectionIndicator under block");
+			Assert.That(
+				DirectionReadabilityValidator.HasExpectedMultiFaceCoverage(
+					arrow,
+					view.EscapeDirection),
+				Is.True);
 
 			foreach (var renderer in arrow.GetComponentsInChildren<Renderer>())
 			{

@@ -197,48 +197,27 @@ namespace TapAway.Runtime
 			var pick = root.AddComponent<BoxCollider>();
 			pick.size = Vector3.one * 0.98f;
 
-			var arrow = CreateArrow(root.transform);
+			var arrow = DirectionIndicatorBuilder.Build(
+				root.transform,
+				block.EscapeDirection,
+				GetArrowPlateMaterial(),
+				GetArrowAccentMaterial());
 			var view = root.AddComponent<BlockView>();
 			view.SetVisualParts(arrow, body.GetComponent<Renderer>());
 			view.Bind(block, ColorFor(block.Id.Value));
 			return view;
 		}
 
-		private static Transform CreateArrow(Transform parent)
+		private static Material GetArrowPlateMaterial()
 		{
 			EnsureArrowMaterials();
+			return _arrowPlateUnlit;
+		}
 
-			var arrowRoot = new GameObject("Arrow");
-			arrowRoot.transform.SetParent(parent, false);
-
-			// Dark plate + bright shaft/head use Unlit materials so arrows stay
-			// readable on poorly lit sides (underside) without depending on scene lights.
-			var plate = GameObject.CreatePrimitive(PrimitiveType.Cube);
-			plate.name = "Plate";
-			plate.transform.SetParent(arrowRoot.transform, false);
-			plate.transform.localPosition = new Vector3(0f, 0f, 0.62f);
-			plate.transform.localScale = new Vector3(0.38f, 0.09f, 0.78f);
-			Destroy(plate.GetComponent<Collider>());
-			plate.GetComponent<Renderer>().sharedMaterial = _arrowPlateUnlit;
-
-			var shaft = GameObject.CreatePrimitive(PrimitiveType.Cube);
-			shaft.name = "Shaft";
-			shaft.transform.SetParent(arrowRoot.transform, false);
-			shaft.transform.localPosition = new Vector3(0f, 0.03f, 0.58f);
-			shaft.transform.localScale = new Vector3(0.18f, 0.18f, 0.66f);
-			Destroy(shaft.GetComponent<Collider>());
-			shaft.GetComponent<Renderer>().sharedMaterial = _arrowAccentUnlit;
-
-			var head = GameObject.CreatePrimitive(PrimitiveType.Cube);
-			head.name = "Head";
-			head.transform.SetParent(arrowRoot.transform, false);
-			head.transform.localPosition = new Vector3(0f, 0.03f, 1.05f);
-			head.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
-			head.transform.localScale = new Vector3(0.36f, 0.11f, 0.36f);
-			Destroy(head.GetComponent<Collider>());
-			head.GetComponent<Renderer>().sharedMaterial = _arrowAccentUnlit;
-
-			return arrowRoot.transform;
+		private static Material GetArrowAccentMaterial()
+		{
+			EnsureArrowMaterials();
+			return _arrowAccentUnlit;
 		}
 
 		/// <summary>

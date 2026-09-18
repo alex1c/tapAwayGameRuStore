@@ -34,7 +34,8 @@ namespace TapAway.Runtime
 		}
 
 		/// <summary>
-		/// Binds this view to a Core block definition and orients the arrow.
+		/// Binds this view to a Core block definition.
+		/// Direction geometry is already grid-aligned by DirectionIndicatorBuilder.
 		/// </summary>
 		public void Bind(PuzzleBlock block, Color color)
 		{
@@ -43,7 +44,13 @@ namespace TapAway.Runtime
 			_baseColor = color;
 			name = "Block_" + block.Id.Value;
 			transform.localPosition = GridToWorld(block.Position);
-			OrientArrow(block.EscapeDirection);
+			// Keep multi-face glyphs in grid space — never re-yaw the whole indicator.
+			if (_arrowRoot != null)
+			{
+				_arrowRoot.localRotation = Quaternion.identity;
+				_arrowRoot.localPosition = Vector3.zero;
+			}
+
 			ApplyColor(color);
 			gameObject.SetActive(true);
 			IsAnimating = false;
@@ -109,22 +116,6 @@ namespace TapAway.Runtime
 		{
 			EscapeDirectionUtil.GetStep(direction, out var dx, out var dy, out var dz);
 			return new Vector3(dx, dy, dz);
-		}
-
-		private void OrientArrow(EscapeDirection direction)
-		{
-			if (_arrowRoot == null)
-			{
-				return;
-			}
-
-			var worldDir = DirectionToWorld(direction);
-			if (worldDir.sqrMagnitude < 0.001f)
-			{
-				return;
-			}
-
-			_arrowRoot.localRotation = Quaternion.LookRotation(worldDir, Vector3.up);
 		}
 
 		private void ApplyColor(Color color)

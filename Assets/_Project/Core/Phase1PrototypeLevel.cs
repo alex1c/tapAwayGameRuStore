@@ -5,6 +5,11 @@ namespace TapAway.Core
 	/// Demonstrates free moves, blocked moves, dependencies, and all six directions.
 	/// Grid positions form a single 6-neighbor FACE-connected component
 	/// (validated by <see cref="LevelTopology"/>).
+	/// Mid-solution layout notes:
+	/// - Block 5 at (2,1,1) stays face-joined to the (2,*,*) cluster (avoids the
+	///   old (0,1,0) orphan that looked edge-only after early removals).
+	/// - Blocks 7 and 11 attach to the lasting X-chain (via block 2) so removing
+	///   block 1 does not leave diagonal-looking dangling cubes.
 	/// </summary>
 	public static class Phase1PrototypeLevel
 	{
@@ -18,16 +23,16 @@ namespace TapAway.Core
 		{
 			1,  // (0,0,0) -X free
 			6,  // (1,1,0) +Y free
-			7,  // (0,0,1) +Z free
+			7,  // (1,0,1) +Z free
 			8,  // (1,0,-1) -Z free
 			9,  // (3,0,0) +X free
-			11, // (0,-1,0) -Y free
+			11, // (1,-1,0) -Y free
 			2,  // (1,0,0) -X now free (1 removed)
 			12, // (2,0,-1) -X now free (8 removed)
 			3,  // (2,0,0) -X now free (2 removed)
 			4,  // (2,0,1) -Z now free (3 removed)
-			5,  // (0,1,0) -Y now free (1 removed)
-			10  // (2,1,0) +X free (was always free but ordered late for clarity)
+			5,  // (2,1,1) +Y free (stays face-joined to 10 until late)
+			10  // (2,1,0) +X free
 		};
 
 		public static PuzzleLevel Create()
@@ -42,16 +47,18 @@ namespace TapAway.Core
 				// Z dependency on the chain tip
 				new PuzzleBlock(4, 2, 0, 1, EscapeDirection.NegZ),
 
-				// Y dependency on block 1
-				new PuzzleBlock(5, 0, 1, 0, EscapeDirection.NegY),
+				// Stays attached to the (2,*,*) cluster through mid/late game.
+				new PuzzleBlock(5, 2, 1, 1, EscapeDirection.PosY),
 
 				// Free escapes covering remaining directions
 				new PuzzleBlock(6, 1, 1, 0, EscapeDirection.PosY),
-				new PuzzleBlock(7, 0, 0, 1, EscapeDirection.PosZ),
+				// Face-joined to block 2 (and 4) so removing 1 does not orphan it.
+				new PuzzleBlock(7, 1, 0, 1, EscapeDirection.PosZ),
 				new PuzzleBlock(8, 1, 0, -1, EscapeDirection.NegZ),
 				new PuzzleBlock(9, 3, 0, 0, EscapeDirection.PosX),
 				new PuzzleBlock(10, 2, 1, 0, EscapeDirection.PosX),
-				new PuzzleBlock(11, 0, -1, 0, EscapeDirection.NegY),
+				// Face-joined to block 2 until 11 itself escapes.
+				new PuzzleBlock(11, 1, -1, 0, EscapeDirection.NegY),
 
 				// Blocked by 8 until 8 escapes
 				new PuzzleBlock(12, 2, 0, -1, EscapeDirection.NegX)
