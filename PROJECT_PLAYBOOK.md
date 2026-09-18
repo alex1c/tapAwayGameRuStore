@@ -45,6 +45,8 @@ Version: 2026-09-17 (Phase 0)
 - Every level must be beatable without ads, rewarded ads, IAP, or boosters.
 - Solver / generator / level-quality / difficulty V1 live in `TapAway.Core`
   (see `Docs/PHASE3_CONTENT_PIPELINE.md`).
+- Phase 4 generated QA gameplay + Direction UX V2:
+  `Docs/PHASE4_GENERATED_GAMEPLAY.md`.
 
 ## 5. Android / RuStore QA
 

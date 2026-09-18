@@ -202,10 +202,37 @@ namespace TapAway.Runtime
 				block.EscapeDirection,
 				GetArrowPlateMaterial(),
 				GetArrowAccentMaterial());
+
+			// Keep arrows readable across small/large generated puzzles.
+			var scale = ComputeArrowScale();
+			var aware = arrow.GetComponent<CameraAwareDirectionIndicator>();
+			aware?.SetAdaptiveScale(scale);
+
 			var view = root.AddComponent<BlockView>();
 			view.SetVisualParts(arrow, body.GetComponent<Renderer>());
 			view.Bind(block, ColorFor(block.Id.Value));
 			return view;
+		}
+
+		private float ComputeArrowScale()
+		{
+			var n = _state != null ? _state.DefinedCount : 12;
+			if (n <= 10)
+			{
+				return 1.15f;
+			}
+
+			if (n <= 16)
+			{
+				return 1f;
+			}
+
+			if (n <= 24)
+			{
+				return 0.9f;
+			}
+
+			return 0.8f;
 		}
 
 		private static Material GetArrowPlateMaterial()

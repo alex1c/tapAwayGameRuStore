@@ -13,7 +13,7 @@ namespace TapAway.Core
 		public const string AlternateProductName = "Block Escape";
 
 		/// <summary>Current content-pipeline phase marker.</summary>
-		public const string Phase = "PHASE_3_SOLVER_GENERATOR";
+		public const string Phase = "PHASE_4_GENERATED_GAMEPLAY";
 
 		/// <summary>
 		/// Returns a stable, human-readable label for bootstrap / QA checks.

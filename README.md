@@ -67,10 +67,14 @@ Assets/_Project/
 
 ## Phase status
 
-**PHASE 3** — solver / reverse generator / level quality / difficulty V1.  
-See [Docs/PHASE3_CONTENT_PIPELINE.md](Docs/PHASE3_CONTENT_PIPELINE.md).
+**PHASE 4** — generated gameplay QA sequence / Direction UX V2.  
+See [Docs/PHASE4_GENERATED_GAMEPLAY.md](Docs/PHASE4_GENERATED_GAMEPLAY.md).
 
 ## Phase 3
 
 See [Docs/PHASE3_CONTENT_PIPELINE.md](Docs/PHASE3_CONTENT_PIPELINE.md).
+
+## Phase 4
+
+See [Docs/PHASE4_GENERATED_GAMEPLAY.md](Docs/PHASE4_GENERATED_GAMEPLAY.md).
 

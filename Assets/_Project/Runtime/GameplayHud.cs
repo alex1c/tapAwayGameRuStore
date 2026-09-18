@@ -13,6 +13,7 @@ namespace TapAway.Runtime
 		private GameObject _root;
 		private Text _levelLabel;
 		private Text _remainingLabel;
+		private Text _devInfoLabel;
 		private Action _onRestart;
 		private Font _font;
 
@@ -39,6 +40,23 @@ namespace TapAway.Runtime
 			{
 				_remainingLabel.text = "Осталось: " + remaining + " / " + total;
 			}
+		}
+
+		/// <summary>Development-only metadata line (seed / difficulty).</summary>
+		public void SetDevInfo(string info)
+		{
+			EnsureUi();
+			if (_devInfoLabel == null)
+			{
+				return;
+			}
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+			_devInfoLabel.text = info ?? string.Empty;
+			_devInfoLabel.gameObject.SetActive(!string.IsNullOrEmpty(info));
+#else
+			_devInfoLabel.gameObject.SetActive(false);
+#endif
 		}
 
 		public void Show()
@@ -83,6 +101,11 @@ namespace TapAway.Runtime
 
 			_remainingLabel = CreateText(safe.transform, "Remaining", "Осталось: 0 / 0", 34,
 				new Vector2(0.06f, 0.82f), new Vector2(0.7f, 0.88f), TextAnchor.MiddleLeft);
+
+			_devInfoLabel = CreateText(safe.transform, "DevInfo", string.Empty, 22,
+				new Vector2(0.06f, 0.76f), new Vector2(0.94f, 0.82f), TextAnchor.MiddleLeft);
+			_devInfoLabel.color = new Color(0.7f, 0.85f, 1f, 0.9f);
+			_devInfoLabel.gameObject.SetActive(false);
 
 			var restartGo = CreateUi("RestartButton", safe.transform);
 			var img = restartGo.AddComponent<Image>();

@@ -18,9 +18,9 @@ namespace TapAway.Core.Tests
 		}
 
 		[Test]
-		public void Phase_IsSolverGeneratorMarker()
+		public void Phase_IsGeneratedGameplayMarker()
 		{
-			Assert.That(FoundationInfo.Phase, Is.EqualTo("PHASE_3_SOLVER_GENERATOR"));
+			Assert.That(FoundationInfo.Phase, Is.EqualTo("PHASE_4_GENERATED_GAMEPLAY"));
 		}
 	}
 }

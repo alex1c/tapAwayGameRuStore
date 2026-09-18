@@ -29,6 +29,7 @@ namespace TapAway.Runtime
 		private float _accumulatedDrag;
 		private float _prevPinchDistance;
 		private Action _onMeaningfulDrag;
+		private Action _onPinch;
 		private bool _inputEnabled = true;
 
 		public void Configure(Camera camera, PuzzlePresenter presenter, PuzzleOrbitCamera orbit)
@@ -46,6 +47,11 @@ namespace TapAway.Runtime
 		public void SetMeaningfulDragHandler(Action handler)
 		{
 			_onMeaningfulDrag = handler;
+		}
+
+		public void SetPinchHandler(Action handler)
+		{
+			_onPinch = handler;
 		}
 
 		public void SetInputEnabled(bool enabled)
@@ -153,6 +159,7 @@ namespace TapAway.Runtime
 				_pointerDown = false;
 				_dragging = false;
 				_prevPinchDistance = dist;
+				_onPinch?.Invoke();
 				return;
 			}
 
