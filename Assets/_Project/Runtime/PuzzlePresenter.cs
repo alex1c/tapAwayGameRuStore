@@ -12,12 +12,16 @@ namespace TapAway.Runtime
 	public sealed class PuzzlePresenter : MonoBehaviour
 	{
 		[SerializeField] private Transform _blocksRoot;
-		[SerializeField] private float _cellSize = 1.05f;
+		[SerializeField] private float _cellSize = 1f;
+		[SerializeField] private float _bodyScale = 0.96f;
 		[SerializeField] private float _flyDistance = 9f;
 		[SerializeField] private float _flyDuration = 0.32f;
 		[SerializeField] private float _bumpDistance = 0.22f;
 		[SerializeField] private float _bumpDuration = 0.11f;
 		[SerializeField] private float _selectAckSeconds = 0.05f;
+
+		private static Material _arrowPlateUnlit;
+		private static Material _arrowAccentUnlit;
 
 		private readonly Dictionary<int, BlockView> _views = new Dictionary<int, BlockView>();
 		private PuzzleState _state;
@@ -179,7 +183,9 @@ namespace TapAway.Runtime
 			var body = GameObject.CreatePrimitive(PrimitiveType.Cube);
 			body.name = "Body";
 			body.transform.SetParent(root.transform, false);
-			body.transform.localScale = Vector3.one * 0.88f;
+			// Nearly fill the unit cell so face-adjacent blocks read as face-joined,
+			// not edge/corner-only due to large visual gaps.
+			body.transform.localScale = Vector3.one * _bodyScale;
 
 			var bodyCollider = body.GetComponent<Collider>();
 			if (bodyCollider != null)
@@ -200,39 +206,72 @@ namespace TapAway.Runtime
 
 		private static Transform CreateArrow(Transform parent)
 		{
+			EnsureArrowMaterials();
+
 			var arrowRoot = new GameObject("Arrow");
 			arrowRoot.transform.SetParent(parent, false);
 
-			var contrast = new Color(0.08f, 0.08f, 0.1f, 1f);
-			var accent = new Color(1f, 0.9f, 0.15f, 1f);
-
-			// Dark outline plate behind the arrow for phone contrast.
+			// Dark plate + bright shaft/head use Unlit materials so arrows stay
+			// readable on poorly lit sides (underside) without depending on scene lights.
 			var plate = GameObject.CreatePrimitive(PrimitiveType.Cube);
 			plate.name = "Plate";
 			plate.transform.SetParent(arrowRoot.transform, false);
 			plate.transform.localPosition = new Vector3(0f, 0f, 0.62f);
-			plate.transform.localScale = new Vector3(0.34f, 0.08f, 0.72f);
+			plate.transform.localScale = new Vector3(0.38f, 0.09f, 0.78f);
 			Destroy(plate.GetComponent<Collider>());
-			plate.GetComponent<Renderer>().material.color = contrast;
+			plate.GetComponent<Renderer>().sharedMaterial = _arrowPlateUnlit;
 
 			var shaft = GameObject.CreatePrimitive(PrimitiveType.Cube);
 			shaft.name = "Shaft";
 			shaft.transform.SetParent(arrowRoot.transform, false);
-			shaft.transform.localPosition = new Vector3(0f, 0.02f, 0.58f);
-			shaft.transform.localScale = new Vector3(0.16f, 0.16f, 0.62f);
+			shaft.transform.localPosition = new Vector3(0f, 0.03f, 0.58f);
+			shaft.transform.localScale = new Vector3(0.18f, 0.18f, 0.66f);
 			Destroy(shaft.GetComponent<Collider>());
-			shaft.GetComponent<Renderer>().material.color = accent;
+			shaft.GetComponent<Renderer>().sharedMaterial = _arrowAccentUnlit;
 
 			var head = GameObject.CreatePrimitive(PrimitiveType.Cube);
 			head.name = "Head";
 			head.transform.SetParent(arrowRoot.transform, false);
-			head.transform.localPosition = new Vector3(0f, 0.02f, 1.02f);
+			head.transform.localPosition = new Vector3(0f, 0.03f, 1.05f);
 			head.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
-			head.transform.localScale = new Vector3(0.34f, 0.1f, 0.34f);
+			head.transform.localScale = new Vector3(0.36f, 0.11f, 0.36f);
 			Destroy(head.GetComponent<Collider>());
-			head.GetComponent<Renderer>().material.color = accent;
+			head.GetComponent<Renderer>().sharedMaterial = _arrowAccentUnlit;
 
 			return arrowRoot.transform;
+		}
+
+		/// <summary>
+		/// Shared Unlit arrow materials — geometry conveys direction; color is contrast only.
+		/// </summary>
+		private static void EnsureArrowMaterials()
+		{
+			if (_arrowPlateUnlit != null && _arrowAccentUnlit != null)
+			{
+				return;
+			}
+
+			var shader = Shader.Find("Unlit/Color");
+			if (shader == null)
+			{
+				shader = Shader.Find("Legacy Shaders/Unlit/Color");
+			}
+
+			if (shader == null)
+			{
+				shader = Shader.Find("Sprites/Default");
+			}
+
+			_arrowPlateUnlit = new Material(shader)
+			{
+				name = "TapAway_ArrowPlate_Unlit",
+				color = new Color(0.05f, 0.05f, 0.07f, 1f)
+			};
+			_arrowAccentUnlit = new Material(shader)
+			{
+				name = "TapAway_ArrowAccent_Unlit",
+				color = new Color(1f, 0.92f, 0.12f, 1f)
+			};
 		}
 
 		private IEnumerator PlayAllowedRoutine(BlockView view)
@@ -343,8 +382,9 @@ namespace TapAway.Runtime
 
 		private static Color ColorFor(int id)
 		{
+			// Slightly higher value keeps underside faces readable under ambient fill.
 			var hue = (id * 0.137f) % 1f;
-			return Color.HSVToRGB(hue, 0.5f, 0.9f);
+			return Color.HSVToRGB(hue, 0.48f, 0.95f);
 		}
 	}
 }

@@ -15,6 +15,7 @@ namespace TapAway.Runtime
 		[SerializeField] private GameplayHud _gameplayHud;
 		[SerializeField] private TutorialController _tutorial;
 		[SerializeField] private PuzzleDebugHud _debugHud;
+		[SerializeField] private PuzzleLighting _lighting;
 		[SerializeField] private Camera _camera;
 		[SerializeField] private bool _showTutorial = true;
 
@@ -32,6 +33,7 @@ namespace TapAway.Runtime
 		{
 			EnsureComponents();
 			DisableLegacyOverlays();
+			_lighting?.Apply();
 			StartLevel(resetTutorial: true);
 		}
 
@@ -156,6 +158,11 @@ namespace TapAway.Runtime
 			if (_debugHud == null)
 			{
 				_debugHud = gameObject.GetComponent<PuzzleDebugHud>();
+			}
+
+			if (_lighting == null)
+			{
+				_lighting = gameObject.GetComponent<PuzzleLighting>() ?? gameObject.AddComponent<PuzzleLighting>();
 			}
 
 			var blocksRoot = transform.Find("BlocksRoot");

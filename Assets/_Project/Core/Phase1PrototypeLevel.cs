@@ -3,6 +3,8 @@ namespace TapAway.Core
 	/// <summary>
 	/// Intentionally designed Phase 1 prototype level (~12 blocks).
 	/// Demonstrates free moves, blocked moves, dependencies, and all six directions.
+	/// Grid positions form a single 6-neighbor FACE-connected component
+	/// (validated by <see cref="LevelTopology"/>).
 	/// </summary>
 	public static class Phase1PrototypeLevel
 	{
