@@ -32,6 +32,9 @@ namespace TapAway.Runtime
 		private Action _onPinch;
 		private bool _inputEnabled = true;
 
+		/// <summary>True when tap/orbit/pinch are accepted.</summary>
+		public bool IsInputEnabled => _inputEnabled;
+
 		public void Configure(Camera camera, PuzzlePresenter presenter, PuzzleOrbitCamera orbit)
 		{
 			_camera = camera;
@@ -57,10 +60,15 @@ namespace TapAway.Runtime
 		public void SetInputEnabled(bool enabled)
 		{
 			_inputEnabled = enabled;
-			if (!enabled)
-			{
-				ResetGestureState();
-			}
+			// Always clear stale pointer/pinch state on enable and disable so a
+			// previous level's touch lifecycle cannot poison the next one.
+			ResetGestureState();
+		}
+
+		/// <summary>Clears pending tap/drag/pinch tracking without changing enabled.</summary>
+		public void ClearGestureState()
+		{
+			ResetGestureState();
 		}
 
 		private void Update()

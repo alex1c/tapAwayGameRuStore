@@ -141,6 +141,8 @@ namespace TapAway.Runtime
 			text.color = Color.white;
 			text.alignment = align;
 			text.horizontalOverflow = HorizontalWrapMode.Overflow;
+			// Labels must not steal orbit/tap from the gameplay surface.
+			text.raycastTarget = false;
 			var rt = go.GetComponent<RectTransform>();
 			rt.anchorMin = anchorMin;
 			rt.anchorMax = anchorMax;

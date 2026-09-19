@@ -55,10 +55,23 @@ namespace TapAway.Editor
 			var camera = UnityEngine.Object.FindFirstObjectByType<Camera>();
 			var light = UnityEngine.Object.FindFirstObjectByType<Light>();
 			var marker = GameObject.Find("FoundationMarker");
+			if (marker == null)
+			{
+				// Marker is deactivated during gameplay Awake; still report existence.
+				foreach (var root in scene.GetRootGameObjects())
+				{
+					if (root.name == "FoundationMarker")
+					{
+						marker = root;
+						break;
+					}
+				}
+			}
 			var bootstrap = GameObject.Find("Bootstrap");
 			sb.AppendLine("HAS_CAMERA=" + (camera != null));
 			sb.AppendLine("HAS_LIGHT=" + (light != null));
 			sb.AppendLine("HAS_FOUNDATION_MARKER=" + (marker != null));
+			sb.AppendLine("FOUNDATION_MARKER_ACTIVE=" + (marker != null && marker.activeSelf));
 			sb.AppendLine("HAS_BOOTSTRAP_GO=" + (bootstrap != null));
 
 			if (camera != null)

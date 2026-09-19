@@ -78,3 +78,5 @@ See [Docs/PHASE3_CONTENT_PIPELINE.md](Docs/PHASE3_CONTENT_PIPELINE.md).
 
 See [Docs/PHASE4_GENERATED_GAMEPLAY.md](Docs/PHASE4_GENERATED_GAMEPLAY.md).
 
+Runtime hotfix: `FoundationMarker` disabled during gameplay; `GameplayPhase` drives input after level transitions (Tutorial→QA / Next Level).
+

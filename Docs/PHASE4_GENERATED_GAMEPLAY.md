@@ -54,6 +54,15 @@ Logged at victory. No network analytics.
 
 Under current base rules, legal removals only clear occupancy. Difficulty is primarily spatial inspection / direction readability, not destructive move planning.
 
+## Presentation invariants (Phase 4 hotfix)
+
+- Every gameplay `BlockView` ↔ exactly one active Core `PuzzleBlock`
+- At settled states: `Core.ActiveCount == active BlockView count`
+- Victory remains Core-authoritative (`ActiveCount == 0`); presentation must settle to match
+- `FoundationMarker` is a Phase 0 diagnostic cube — **disabled during gameplay** so it cannot appear as an orphan grey block
+- `GameplayPhase`: LoadingLevel → Playing → RemovingBlock → Victory → Transitioning
+- After Restart / Next / Tutorial→QA: phase becomes **Playing**, input enabled, gestures cleared, Victory raycasts off
+
 ## Editor
 
 - `TapAway/Phase4/Preview QA Level`

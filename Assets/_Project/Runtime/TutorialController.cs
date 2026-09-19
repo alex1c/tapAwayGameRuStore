@@ -101,6 +101,7 @@ namespace TapAway.Runtime
 
 		public void Hide()
 		{
+			CancelInvoke();
 			if (_root != null)
 			{
 				_root.SetActive(false);
@@ -186,6 +187,7 @@ namespace TapAway.Runtime
 			_prompt.fontSize = 36;
 			_prompt.alignment = TextAnchor.MiddleCenter;
 			_prompt.color = Color.white;
+			_prompt.raycastTarget = false;
 			var promptRt = promptGo.GetComponent<RectTransform>();
 			promptRt.anchorMin = Vector2.zero;
 			promptRt.anchorMax = Vector2.one;
@@ -213,6 +215,7 @@ namespace TapAway.Runtime
 			skipLabel.fontSize = 28;
 			skipLabel.alignment = TextAnchor.MiddleCenter;
 			skipLabel.color = Color.white;
+			skipLabel.raycastTarget = false;
 			var skipLabelRt = skipLabelGo.GetComponent<RectTransform>();
 			skipLabelRt.anchorMin = Vector2.zero;
 			skipLabelRt.anchorMax = Vector2.one;

@@ -10,6 +10,8 @@ namespace TapAway.Runtime
 	public sealed class VictoryOverlay : MonoBehaviour
 	{
 		private GameObject _root;
+		private CanvasGroup _canvasGroup;
+		private GraphicRaycaster _raycaster;
 		private Action _onRestart;
 		private Action _onNext;
 		private Font _font;
@@ -57,6 +59,7 @@ namespace TapAway.Runtime
 #endif
 			}
 
+			SetRaycastBlocking(true);
 			_root.SetActive(true);
 		}
 
@@ -69,7 +72,24 @@ namespace TapAway.Runtime
 		{
 			if (_root != null)
 			{
+				// Explicitly drop raycasts so a visually-hidden overlay cannot
+				// intercept orbit/tap after Next Level / Restart.
+				SetRaycastBlocking(false);
 				_root.SetActive(false);
+			}
+		}
+
+		private void SetRaycastBlocking(bool block)
+		{
+			if (_canvasGroup != null)
+			{
+				_canvasGroup.blocksRaycasts = block;
+				_canvasGroup.interactable = block;
+			}
+
+			if (_raycaster != null)
+			{
+				_raycaster.enabled = block;
 			}
 		}
 
@@ -90,7 +110,8 @@ namespace TapAway.Runtime
 			var scaler = _root.AddComponent<CanvasScaler>();
 			scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
 			scaler.referenceResolution = new Vector2(1080f, 1920f);
-			_root.AddComponent<GraphicRaycaster>();
+			_raycaster = _root.AddComponent<GraphicRaycaster>();
+			_canvasGroup = _root.AddComponent<CanvasGroup>();
 
 			EnsureEventSystem();
 
@@ -110,6 +131,7 @@ namespace TapAway.Runtime
 			_title.alignment = TextAnchor.MiddleCenter;
 			_title.fontSize = 64;
 			_title.color = Color.white;
+			_title.raycastTarget = false;
 			var titleRt = titleGo.GetComponent<RectTransform>();
 			titleRt.anchorMin = new Vector2(0.08f, 0.58f);
 			titleRt.anchorMax = new Vector2(0.92f, 0.72f);
@@ -123,6 +145,7 @@ namespace TapAway.Runtime
 			_subtitle.alignment = TextAnchor.MiddleCenter;
 			_subtitle.fontSize = 32;
 			_subtitle.color = new Color(0.85f, 0.9f, 1f, 1f);
+			_subtitle.raycastTarget = false;
 			var subRt = subGo.GetComponent<RectTransform>();
 			subRt.anchorMin = new Vector2(0.1f, 0.5f);
 			subRt.anchorMax = new Vector2(0.9f, 0.58f);
@@ -153,6 +176,7 @@ namespace TapAway.Runtime
 			_metricsLabel.fontSize = 22;
 			_metricsLabel.alignment = TextAnchor.UpperCenter;
 			_metricsLabel.color = new Color(0.75f, 0.8f, 0.85f, 1f);
+			_metricsLabel.raycastTarget = false;
 			var mrt = metricsGo.GetComponent<RectTransform>();
 			mrt.anchorMin = new Vector2(0.06f, 0.08f);
 			mrt.anchorMax = new Vector2(0.94f, 0.22f);
@@ -189,6 +213,7 @@ namespace TapAway.Runtime
 			label.alignment = TextAnchor.MiddleCenter;
 			label.fontSize = 40;
 			label.color = Color.white;
+			label.raycastTarget = false;
 			StretchFull(labelGo.GetComponent<RectTransform>());
 			return buttonGo;
 		}

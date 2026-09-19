@@ -30,11 +30,29 @@ namespace TapAway.Runtime
 		private Action<MoveResult> _onMoveResolved;
 		private Action _onCompleted;
 		private BlockId _highlightId;
+		private LevelBootstrap _bootstrap;
 
 		public PuzzleState State => _state;
 		public bool IsInputLocked => _inputLocked || !_interactionEnabled;
 		public int ViewCount => _views.Count;
 		public Transform BlocksRoot => _blocksRoot != null ? _blocksRoot : transform;
+
+		/// <summary>
+		/// Active tracked views only (ignores Destroy-deferred inactive leftovers).
+		/// </summary>
+		public int CountActiveViews()
+		{
+			var count = 0;
+			foreach (var pair in _views)
+			{
+				if (pair.Value != null && pair.Value.gameObject.activeInHierarchy)
+				{
+					count++;
+				}
+			}
+
+			return count;
+		}
 
 		public void SetBlocksRoot(Transform root)
 		{
@@ -58,7 +76,10 @@ namespace TapAway.Runtime
 			_inputLocked = false;
 			_interactionEnabled = true;
 			_highlightId = default;
+			_bootstrap = GetComponent<LevelBootstrap>() ??
+			             FindFirstObjectByType<LevelBootstrap>();
 			RebuildViews();
+			GameplayPresentationInvariant.AssertParityOrLog(_state, this);
 		}
 
 		/// <summary>
@@ -326,6 +347,11 @@ namespace TapAway.Runtime
 			{
 				_onCompleted?.Invoke();
 			}
+			else
+			{
+				_bootstrap?.NotifyRemovalSettled();
+				GameplayPresentationInvariant.AssertParityOrLog(_state, this);
+			}
 		}
 
 		private IEnumerator PlayBlockedRoutine(BlockView view)
@@ -363,6 +389,7 @@ namespace TapAway.Runtime
 			view.RestoreBaseColor();
 			view.SetAnimating(false);
 			_inputLocked = false;
+			_bootstrap?.NotifyRemovalSettled();
 		}
 
 		private void ClearViews()
@@ -371,6 +398,9 @@ namespace TapAway.Runtime
 			{
 				if (pair.Value != null)
 				{
+					// Deactivate immediately — Destroy() is deferred to end of frame,
+					// and orphan/parity checks must not see stale gameplay cubes.
+					pair.Value.gameObject.SetActive(false);
 					Destroy(pair.Value.gameObject);
 				}
 			}
@@ -381,7 +411,9 @@ namespace TapAway.Runtime
 			{
 				for (var i = _blocksRoot.childCount - 1; i >= 0; i--)
 				{
-					Destroy(_blocksRoot.GetChild(i).gameObject);
+					var child = _blocksRoot.GetChild(i).gameObject;
+					child.SetActive(false);
+					Destroy(child);
 				}
 			}
 		}
