@@ -8,6 +8,7 @@ Brief for Cursor and Codex working on this repository.
 - Stack: **Unity + C#**
 - Store: **Android / RuStore**
 - Phase 4: generated gameplay QA sequence / Direction UX V2
+- Phase 5: campaign / progression / persistence / large-level mobile UX
 
 ## Source of truth
 

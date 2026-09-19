@@ -20,8 +20,8 @@ namespace TapAway.PlayMode.Tests
 
 			var bootstrap = Object.FindFirstObjectByType<LevelBootstrap>();
 			Assert.That(bootstrap, Is.Not.Null);
-
-			// Allow Awake/Start wiring to finish.
+			bootstrap.LoadPrototype();
+			yield return null;
 			yield return null;
 
 			Assert.That(bootstrap.Presenter, Is.Not.Null);
@@ -142,6 +142,14 @@ namespace TapAway.PlayMode.Tests
 			Assert.That(load, Is.Not.Null);
 			while (!load.isDone)
 			{
+				yield return null;
+			}
+
+			var bootstrap = Object.FindFirstObjectByType<LevelBootstrap>();
+			if (bootstrap != null && (bootstrap.Presenter == null || bootstrap.Presenter.ViewCount == 0))
+			{
+				bootstrap.LoadPrototype();
+				yield return null;
 				yield return null;
 			}
 		}

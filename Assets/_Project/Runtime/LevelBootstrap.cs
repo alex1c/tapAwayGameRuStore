@@ -1,14 +1,24 @@
+using System;
 using TapAway.Core;
 using UnityEngine;
 
 namespace TapAway.Runtime
 {
 	/// <summary>
-	/// Phase 4 bootstrap: tutorial fixture → deterministic QA generated sequence.
-	/// Input/orbit availability is driven by <see cref="GameplayPhase"/>.
+	/// Gameplay host: campaign levels, tutorial fixture, and legacy QA sequence.
+	/// App shell / Home is owned by <see cref="GameApp"/>.
 	/// </summary>
 	public sealed class LevelBootstrap : MonoBehaviour
 	{
+		public sealed class CompletionInfo
+		{
+			public bool IsTutorial;
+			public bool IsCampaign;
+			public bool IsQaSequence;
+			public int CampaignLevelIndex;
+			public LevelPlayMetrics Metrics;
+		}
+
 		[SerializeField] private PuzzlePresenter _presenter;
 		[SerializeField] private PuzzleOrbitCamera _orbit;
 		[SerializeField] private PuzzleInputController _input;
@@ -37,11 +47,18 @@ namespace TapAway.Runtime
 		private TutorialState _tutorialState;
 		private LevelPlayMetrics _metrics = new LevelPlayMetrics();
 		private bool _inTutorial;
+		private bool _inCampaign;
+		private bool _playQaSequenceFlag = true;
 		private int _qaIndex;
+		private int _campaignIndex = 1;
 		private bool _sequenceComplete;
 		private float _levelStartTime;
-		private bool _playQaSequenceFlag = true;
+		private float _pausedAccumulated;
+		private bool _isPaused;
 		private GameplayPhase _phase = GameplayPhase.LoadingLevel;
+		private Action<CompletionInfo> _onCompletedExternal;
+		private Action _onHomeExternal;
+		private Action _onPauseExternal;
 
 		private Phase4QaLevelSource QaSource
 		{
@@ -64,13 +81,16 @@ namespace TapAway.Runtime
 		public GameLevelDescriptor CurrentDescriptor => _current;
 		public LevelPlayMetrics Metrics => _metrics;
 		public int QaIndex => _qaIndex;
+		public int CampaignIndex => _campaignIndex;
 		public bool IsTutorial => _inTutorial;
+		public bool IsCampaign => _inCampaign;
 		public bool IsSequenceComplete => _sequenceComplete;
 		public int ExpectedBlockCount => _level != null ? _level.Blocks.Count : 0;
 		public int DevPreviewSeed => _devPreviewSeed;
 		public GameplayPhase Phase => _phase;
 		public PuzzleInputController InputController => _input;
 		public PuzzleOrbitCamera Orbit => _orbit;
+		public bool IsPaused => _isPaused;
 
 		private void Awake()
 		{
@@ -81,22 +101,111 @@ namespace TapAway.Runtime
 			_tutorialSource = new HandcraftedLevelSource();
 			_playQaSequenceFlag = _playQaSequence;
 
+			var app = GetComponent<GameApp>() ?? gameObject.AddComponent<GameApp>();
+			app.Initialize(this);
+		}
+
+		private void Update()
+		{
+			if (_state != null && !_sequenceComplete &&
+			    _phase == GameplayPhase.Playing && !_isPaused)
+			{
+				_metrics.ElapsedSeconds = (Time.time - _levelStartTime) - _pausedAccumulated;
+			}
+		}
+
+		public void SetCompletionHandler(Action<CompletionInfo> handler)
+		{
+			_onCompletedExternal = handler;
+		}
+
+		public void SetHomeHandler(Action handler)
+		{
+			_onHomeExternal = handler;
+			_victory?.Configure(Restart, NextLevel, GoHome);
+		}
+
+		public void SetPauseHandler(Action handler)
+		{
+			_onPauseExternal = handler;
+			_gameplayHud?.Configure(Restart, () => _onPauseExternal?.Invoke());
+		}
+
+		/// <summary>Used by GameApp when DevQa / DevOverride should auto-play.</summary>
+		public void BeginLegacyAutoFlow()
+		{
+			_inCampaign = false;
 			if (DevQaIndexOverride.HasValue)
 			{
 				_qaIndex = Mathf.Clamp(DevQaIndexOverride.Value, 0, Phase4QaLevelSet.Count - 1);
 				_showTutorial = false;
 				_playQaSequenceFlag = true;
 				DevQaIndexOverride = null;
+				_inTutorial = false;
+				LoadCurrentLevel(resetTutorial: false);
+				return;
 			}
 
 			StartFlow(resetTutorial: true);
 		}
 
-		private void Update()
+		public void StartCampaignLevel(int index1Based)
 		{
-			if (_state != null && !_sequenceComplete && _phase == GameplayPhase.Playing)
+			_inCampaign = true;
+			_inTutorial = false;
+			_playQaSequenceFlag = false;
+			_qaSource = null;
+			_sequenceComplete = false;
+			DevOverrideLevel = null;
+			_loadGeneratedPreview = false;
+			_campaignIndex = Mathf.Clamp(index1Based, 1, CampaignDefinition.LevelCount);
+			LoadCurrentLevel(resetTutorial: false);
+		}
+
+		public void StartTutorialReplay()
+		{
+			_inCampaign = false;
+			_inTutorial = true;
+			_playQaSequenceFlag = false;
+			_qaSource = null;
+			DevOverrideLevel = null;
+			_loadGeneratedPreview = false;
+			LoadCurrentLevel(resetTutorial: true);
+		}
+
+		public void SuspendGameplayForMenu()
+		{
+			_phase = GameplayPhase.Transitioning;
+			_victory?.Hide();
+			_tutorial?.Hide();
+			_gameplayHud?.Hide();
+			_input?.SetInputEnabled(false);
+			_presenter?.SetInteractionEnabled(false);
+			_presenter?.ClearViewsImmediate();
+			_isPaused = false;
+		}
+
+		public void SetPaused(bool paused)
+		{
+			_isPaused = paused;
+			if (paused)
 			{
-				_metrics.ElapsedSeconds = Time.time - _levelStartTime;
+				_input?.SetInputEnabled(false);
+				_presenter?.SetInteractionEnabled(false);
+			}
+			else if (_phase == GameplayPhase.Playing)
+			{
+				_input?.SetInputEnabled(true);
+				_presenter?.SetInteractionEnabled(true);
+				_input?.ClearGestureState();
+			}
+		}
+
+		public void AddPausedSeconds(float seconds)
+		{
+			if (seconds > 0f)
+			{
+				_pausedAccumulated += seconds;
 			}
 		}
 
@@ -111,10 +220,47 @@ namespace TapAway.Runtime
 		{
 			_phase = GameplayPhase.Transitioning;
 			_victory?.Hide();
+
 			if (_inTutorial)
 			{
+				// After tutorial → campaign level 1.
 				_inTutorial = false;
-				_qaIndex = 0;
+				_inCampaign = true;
+				_campaignIndex = 1;
+				_playQaSequenceFlag = false;
+				if (GameApp.Instance != null && GameApp.Instance.Progress != null)
+				{
+					GameApp.Instance.Progress.SetLastPlayed(1);
+					GameApp.Instance.SaveProgress();
+				}
+
+				LoadCurrentLevel(resetTutorial: false);
+				return;
+			}
+
+			if (_inCampaign)
+			{
+				if (_campaignIndex >= CampaignDefinition.LevelCount)
+				{
+					_sequenceComplete = true;
+					EnterVictory(
+						"Кампания пройдена",
+						"Все " + CampaignDefinition.LevelCount + " уровней",
+						showNext: false,
+						showHome: true);
+					return;
+				}
+
+				var next = _campaignIndex + 1;
+				if (GameApp.Instance != null && !GameApp.Instance.Progress.IsUnlocked(next))
+				{
+					// Safety: should already be unlocked by OnCompleted save.
+					GameApp.Instance.Progress.HighestUnlockedLevel =
+						Mathf.Max(GameApp.Instance.Progress.HighestUnlockedLevel, next);
+					GameApp.Instance.SaveProgress();
+				}
+
+				_campaignIndex = next;
 				LoadCurrentLevel(resetTutorial: false);
 				return;
 			}
@@ -138,12 +284,18 @@ namespace TapAway.Runtime
 				EnterVictory(
 					"Серия пройдена",
 					"QA 1–" + source.Count + " завершены",
-					showNext: false);
+					showNext: false,
+					showHome: true);
 				return;
 			}
 
 			_qaIndex++;
 			LoadCurrentLevel(resetTutorial: false);
+		}
+
+		public void GoHome()
+		{
+			_onHomeExternal?.Invoke();
 		}
 
 		public bool TryLoadGeneratedSeed(int seed, GeneratorConfig config = null)
@@ -162,6 +314,7 @@ namespace TapAway.Runtime
 			_playQaSequence = false;
 			_playQaSequenceFlag = false;
 			_inTutorial = false;
+			_inCampaign = false;
 			Restart();
 			return true;
 		}
@@ -171,7 +324,9 @@ namespace TapAway.Runtime
 			DevOverrideLevel = null;
 			_loadGeneratedPreview = false;
 			_inTutorial = true;
+			_inCampaign = false;
 			_playQaSequence = false;
+			_playQaSequenceFlag = false;
 			Restart();
 		}
 
@@ -181,6 +336,7 @@ namespace TapAway.Runtime
 			_playQaSequenceFlag = true;
 			_qaIndex = Mathf.Clamp(index, 0, Phase4QaLevelSet.Count - 1);
 			_inTutorial = false;
+			_inCampaign = false;
 			_sequenceComplete = false;
 			DevOverrideLevel = null;
 			_loadGeneratedPreview = false;
@@ -190,6 +346,7 @@ namespace TapAway.Runtime
 		private void StartFlow(bool resetTutorial)
 		{
 			_sequenceComplete = false;
+			_inCampaign = false;
 			if (_loadGeneratedPreview && _devPreviewSeed != 0)
 			{
 				_inTutorial = false;
@@ -217,9 +374,9 @@ namespace TapAway.Runtime
 		{
 			_phase = GameplayPhase.LoadingLevel;
 			_sequenceComplete = false;
+			_pausedAccumulated = 0f;
+			_isPaused = false;
 
-			// Hide any leftover victory UI before rebuilding — prevents a
-			// full-screen Dim from intercepting the next level's gestures.
 			_victory?.Hide();
 			_tutorial?.Hide();
 
@@ -268,10 +425,6 @@ namespace TapAway.Runtime
 			          " views=" + _presenter.ViewCount);
 		}
 
-		/// <summary>
-		/// Playing is the only phase where orbit/tap/pinch are accepted.
-		/// Called after every successful level load (including Tutorial → QA).
-		/// </summary>
 		private void EnterPlaying()
 		{
 			_phase = GameplayPhase.Playing;
@@ -281,13 +434,25 @@ namespace TapAway.Runtime
 			_victory?.Hide();
 		}
 
-		private void EnterVictory(string title, string subtitle, bool showNext)
+		private void EnterVictory(string title, string subtitle, bool showNext, bool showHome = true)
 		{
 			_phase = GameplayPhase.Victory;
 			_presenter?.SetInteractionEnabled(false);
 			_input?.SetInputEnabled(false);
 			_gameplayHud?.Hide();
-			_victory?.Show(title, subtitle, showNext: showNext, metrics: _metrics.ToDebugLine());
+			_victory?.Show(
+				title,
+				subtitle,
+				showNext: showNext,
+				showHome: showHome,
+				metrics: BuildVictoryMetrics());
+		}
+
+		private string BuildVictoryMetrics()
+		{
+			return "время " + _metrics.ElapsedSeconds.ToString("0.0") + "с" +
+			       "  блок " + _metrics.BlockedTaps +
+			       "  повороты " + _metrics.OrbitGestures;
 		}
 
 		private GameLevelDescriptor ResolveDescriptor()
@@ -322,6 +487,11 @@ namespace TapAway.Runtime
 				return _tutorialSource.GetLevel(0);
 			}
 
+			if (_inCampaign)
+			{
+				return CampaignDefinition.LoadLevel(_campaignIndex);
+			}
+
 			if (_qaSource != null || _playQaSequenceFlag)
 			{
 				return QaSource.GetLevel(_qaIndex);
@@ -335,6 +505,11 @@ namespace TapAway.Runtime
 			if (_inTutorial)
 			{
 				return "Обучение";
+			}
+
+			if (_inCampaign)
+			{
+				return "Уровень " + _campaignIndex + " / " + CampaignDefinition.LevelCount;
 			}
 
 			if (_qaSource != null || (_playQaSequenceFlag && !_inTutorial))
@@ -384,29 +559,51 @@ namespace TapAway.Runtime
 			_debugHud?.ReportMove(result);
 			_gameplayHud?.SetRemaining(_state.ActiveCount, _state.DefinedCount);
 			_tutorial?.NotifyMove(result);
-			// Parity is checked after removal settles — Core updates before the view flies out.
 		}
 
 		private void OnCompleted()
 		{
-			_metrics.ElapsedSeconds = Time.time - _levelStartTime;
-			// At victory Core is empty; views must also be gone (settled).
+			_metrics.ElapsedSeconds = (Time.time - _levelStartTime) - _pausedAccumulated;
 			GameplayPresentationInvariant.AssertParityOrLog(_state, _presenter);
 
-			var hasNext = _inTutorial || (_playQaSequenceFlag && _qaIndex < Phase4QaLevelSet.Count - 1);
-			var title = _inTutorial ? "Обучение пройдено" : "Уровень пройден";
-			var subtitle = _inTutorial
-				? "Дальше — серия QA-уровней"
-				: "QA " + (_qaIndex + 1) + " / " + Phase4QaLevelSet.Count;
+			var info = new CompletionInfo
+			{
+				IsTutorial = _inTutorial,
+				IsCampaign = _inCampaign,
+				IsQaSequence = !_inTutorial && !_inCampaign && _playQaSequenceFlag,
+				CampaignLevelIndex = _inCampaign ? _campaignIndex : 0,
+				Metrics = _metrics
+			};
+			_onCompletedExternal?.Invoke(info);
 
-			EnterVictory(title, subtitle, showNext: hasNext);
+			bool hasNext;
+			string title;
+			string subtitle;
+			if (_inTutorial)
+			{
+				hasNext = true;
+				title = "Обучение пройдено";
+				subtitle = "Дальше — кампания";
+			}
+			else if (_inCampaign)
+			{
+				hasNext = _campaignIndex < CampaignDefinition.LevelCount;
+				title = _campaignIndex >= CampaignDefinition.LevelCount
+					? "Кампания пройдена"
+					: "Уровень пройден";
+				subtitle = "Уровень " + _campaignIndex + " / " + CampaignDefinition.LevelCount;
+			}
+			else
+			{
+				hasNext = _playQaSequenceFlag && _qaIndex < Phase4QaLevelSet.Count - 1;
+				title = "Уровень пройден";
+				subtitle = "QA " + (_qaIndex + 1) + " / " + Phase4QaLevelSet.Count;
+			}
+
+			EnterVictory(title, subtitle, showNext: hasNext, showHome: true);
 			Debug.Log("[TapAway][Metrics] " + _metrics.ToDebugLine());
 		}
 
-		/// <summary>
-		/// Called by presenter when a removal/blocked animation finishes and
-		/// the level is not yet complete — restores Playing for the next gesture.
-		/// </summary>
 		public void NotifyRemovalSettled()
 		{
 			if (_phase == GameplayPhase.RemovingBlock && _state != null && !_state.IsComplete)
@@ -418,12 +615,22 @@ namespace TapAway.Runtime
 
 		private void OnOrbitGesture()
 		{
+			if (_isPaused)
+			{
+				return;
+			}
+
 			_metrics.OrbitGestures++;
 			_tutorial?.NotifyMeaningfulDrag();
 		}
 
 		private void OnPinchGesture()
 		{
+			if (_isPaused)
+			{
+				return;
+			}
+
 			_metrics.PinchGestures++;
 		}
 
@@ -504,8 +711,8 @@ namespace TapAway.Runtime
 			_input.Configure(_camera, _presenter, _orbit);
 			_input.SetMeaningfulDragHandler(OnOrbitGesture);
 			_input.SetPinchHandler(OnPinchGesture);
-			_victory.Configure(Restart, NextLevel);
-			_gameplayHud.Configure(Restart);
+			_victory.Configure(Restart, NextLevel, GoHome);
+			_gameplayHud.Configure(Restart, () => _onPauseExternal?.Invoke());
 		}
 	}
 }

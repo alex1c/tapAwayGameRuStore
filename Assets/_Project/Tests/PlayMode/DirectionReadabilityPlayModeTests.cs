@@ -57,6 +57,8 @@ namespace TapAway.PlayMode.Tests
 
 			var bootstrap = Object.FindFirstObjectByType<LevelBootstrap>();
 			Assert.That(bootstrap, Is.Not.Null);
+			bootstrap.LoadPrototype();
+			yield return null;
 			yield return null;
 
 			var prefix = new[] { 1, 6, 7, 8, 9, 11, 2 };

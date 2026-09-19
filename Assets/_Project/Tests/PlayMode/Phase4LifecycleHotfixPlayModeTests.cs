@@ -67,7 +67,7 @@ namespace TapAway.PlayMode.Tests
 		}
 
 		[UnityTest]
-		public IEnumerator Tutorial_To_Qa1_ClearsStaleViews_AndEnablesInput()
+		public IEnumerator Tutorial_To_Campaign1_ClearsStaleViews_AndEnablesInput()
 		{
 			LevelBootstrap.DevOverrideLevel = null;
 			LevelBootstrap.DevQaIndexOverride = null;
@@ -76,7 +76,14 @@ namespace TapAway.PlayMode.Tests
 			yield return null;
 
 			var bootstrap = Object.FindFirstObjectByType<LevelBootstrap>();
+			var app = Object.FindFirstObjectByType<GameApp>();
 			Assert.That(bootstrap, Is.Not.Null);
+			Assert.That(app, Is.Not.Null);
+			app.UseTestRepository(new MemoryProgressStorage());
+			app.StartTutorial(fromHome: true);
+			yield return null;
+			yield return null;
+
 			Assert.That(bootstrap.IsTutorial, Is.True);
 			Assert.That(bootstrap.Phase, Is.EqualTo(GameplayPhase.Playing));
 			Assert.That(bootstrap.InputController.IsInputEnabled, Is.True);
@@ -91,10 +98,11 @@ namespace TapAway.PlayMode.Tests
 			yield return null;
 
 			Assert.That(bootstrap.IsTutorial, Is.False);
-			Assert.That(bootstrap.QaIndex, Is.EqualTo(0));
-			Assert.That(bootstrap.CurrentDescriptor.Seed, Is.EqualTo(41000));
-			Assert.That(bootstrap.State.ActiveCount, Is.EqualTo(8));
-			Assert.That(bootstrap.Presenter.ViewCount, Is.EqualTo(8));
+			Assert.That(bootstrap.IsCampaign, Is.True);
+			Assert.That(bootstrap.CampaignIndex, Is.EqualTo(1));
+			Assert.That(bootstrap.CurrentDescriptor.Seed, Is.EqualTo(50000));
+			Assert.That(bootstrap.State.ActiveCount, Is.EqualTo(6));
+			Assert.That(bootstrap.Presenter.ViewCount, Is.EqualTo(6));
 			Assert.That(bootstrap.Victory.IsVisible, Is.False);
 			Assert.That(bootstrap.Phase, Is.EqualTo(GameplayPhase.Playing));
 			Assert.That(bootstrap.InputController.IsInputEnabled, Is.True);

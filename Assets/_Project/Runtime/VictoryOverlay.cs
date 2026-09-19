@@ -5,7 +5,7 @@ using UnityEngine.UI;
 namespace TapAway.Runtime
 {
 	/// <summary>
-	/// Victory overlay with Restart + optional Next Level CTAs (safe-area aware).
+	/// Victory overlay with Next / Restart / Home CTAs (safe-area aware).
 	/// </summary>
 	public sealed class VictoryOverlay : MonoBehaviour
 	{
@@ -14,23 +14,33 @@ namespace TapAway.Runtime
 		private GraphicRaycaster _raycaster;
 		private Action _onRestart;
 		private Action _onNext;
+		private Action _onHome;
 		private Font _font;
 		private Text _title;
 		private Text _subtitle;
 		private GameObject _nextButton;
+		private GameObject _homeButton;
+		private Text _nextLabel;
 		private Text _metricsLabel;
 
 		public bool IsVisible => _root != null && _root.activeSelf;
 
-		public void Configure(Action onRestart, Action onNext = null)
+		public void Configure(Action onRestart, Action onNext = null, Action onHome = null)
 		{
 			_onRestart = onRestart;
 			_onNext = onNext;
+			_onHome = onHome;
 			EnsureUi();
 			Hide();
 		}
 
-		public void Show(string title = null, string subtitle = null, bool showNext = false, string metrics = null)
+		public void Show(
+			string title = null,
+			string subtitle = null,
+			bool showNext = false,
+			bool showHome = true,
+			string metrics = null,
+			string nextLabel = null)
 		{
 			EnsureUi();
 			if (_title != null && !string.IsNullOrEmpty(title))
@@ -47,16 +57,25 @@ namespace TapAway.Runtime
 			if (_nextButton != null)
 			{
 				_nextButton.SetActive(showNext && _onNext != null);
+				if (_nextLabel != null && !string.IsNullOrEmpty(nextLabel))
+				{
+					_nextLabel.text = nextLabel;
+				}
+				else if (_nextLabel != null)
+				{
+					_nextLabel.text = "Следующий уровень";
+				}
+			}
+
+			if (_homeButton != null)
+			{
+				_homeButton.SetActive(showHome && _onHome != null);
 			}
 
 			if (_metricsLabel != null)
 			{
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
 				_metricsLabel.text = metrics ?? string.Empty;
 				_metricsLabel.gameObject.SetActive(!string.IsNullOrEmpty(metrics));
-#else
-				_metricsLabel.gameObject.SetActive(false);
-#endif
 			}
 
 			SetRaycastBlocking(true);
@@ -65,15 +84,13 @@ namespace TapAway.Runtime
 
 		public void Show()
 		{
-			Show("Уровень пройден", null, _onNext != null, null);
+			Show("Уровень пройден", null, _onNext != null, true, null);
 		}
 
 		public void Hide()
 		{
 			if (_root != null)
 			{
-				// Explicitly drop raycasts so a visually-hidden overlay cannot
-				// intercept orbit/tap after Next Level / Restart.
 				SetRaycastBlocking(false);
 				_root.SetActive(false);
 			}
@@ -133,8 +150,8 @@ namespace TapAway.Runtime
 			_title.color = Color.white;
 			_title.raycastTarget = false;
 			var titleRt = titleGo.GetComponent<RectTransform>();
-			titleRt.anchorMin = new Vector2(0.08f, 0.58f);
-			titleRt.anchorMax = new Vector2(0.92f, 0.72f);
+			titleRt.anchorMin = new Vector2(0.08f, 0.62f);
+			titleRt.anchorMax = new Vector2(0.92f, 0.76f);
 			titleRt.offsetMin = Vector2.zero;
 			titleRt.offsetMax = Vector2.zero;
 
@@ -147,8 +164,8 @@ namespace TapAway.Runtime
 			_subtitle.color = new Color(0.85f, 0.9f, 1f, 1f);
 			_subtitle.raycastTarget = false;
 			var subRt = subGo.GetComponent<RectTransform>();
-			subRt.anchorMin = new Vector2(0.1f, 0.5f);
-			subRt.anchorMax = new Vector2(0.9f, 0.58f);
+			subRt.anchorMin = new Vector2(0.1f, 0.54f);
+			subRt.anchorMax = new Vector2(0.9f, 0.62f);
 			subRt.offsetMin = Vector2.zero;
 			subRt.offsetMax = Vector2.zero;
 
@@ -157,29 +174,41 @@ namespace TapAway.Runtime
 				"NextButton",
 				"Следующий уровень",
 				new Color(0.2f, 0.55f, 0.85f, 1f),
-				new Vector2(0.18f, 0.36f),
-				new Vector2(0.82f, 0.46f),
-				() => _onNext?.Invoke());
+				new Vector2(0.18f, 0.4f),
+				new Vector2(0.82f, 0.5f),
+				() => _onNext?.Invoke(),
+				out _nextLabel);
 
 			CreateButton(
 				safe.transform,
 				"RestartButton",
-				"Restart",
+				"Повторить",
 				new Color(0.2f, 0.65f, 0.35f, 1f),
-				new Vector2(0.22f, 0.24f),
-				new Vector2(0.78f, 0.34f),
-				() => _onRestart?.Invoke());
+				new Vector2(0.18f, 0.28f),
+				new Vector2(0.82f, 0.38f),
+				() => _onRestart?.Invoke(),
+				out _);
+
+			_homeButton = CreateButton(
+				safe.transform,
+				"HomeButton",
+				"На главную",
+				new Color(0.3f, 0.3f, 0.38f, 1f),
+				new Vector2(0.18f, 0.16f),
+				new Vector2(0.82f, 0.26f),
+				() => _onHome?.Invoke(),
+				out _);
 
 			var metricsGo = CreateUi("Metrics", safe.transform);
 			_metricsLabel = metricsGo.AddComponent<Text>();
 			_metricsLabel.font = _font;
-			_metricsLabel.fontSize = 22;
+			_metricsLabel.fontSize = 26;
 			_metricsLabel.alignment = TextAnchor.UpperCenter;
 			_metricsLabel.color = new Color(0.75f, 0.8f, 0.85f, 1f);
 			_metricsLabel.raycastTarget = false;
 			var mrt = metricsGo.GetComponent<RectTransform>();
-			mrt.anchorMin = new Vector2(0.06f, 0.08f);
-			mrt.anchorMax = new Vector2(0.94f, 0.22f);
+			mrt.anchorMin = new Vector2(0.06f, 0.04f);
+			mrt.anchorMax = new Vector2(0.94f, 0.14f);
 			mrt.offsetMin = Vector2.zero;
 			mrt.offsetMax = Vector2.zero;
 			_metricsLabel.gameObject.SetActive(false);
@@ -192,7 +221,8 @@ namespace TapAway.Runtime
 			Color color,
 			Vector2 anchorMin,
 			Vector2 anchorMax,
-			Action onClick)
+			Action onClick,
+			out Text label)
 		{
 			var buttonGo = CreateUi(name, parent);
 			var buttonImage = buttonGo.AddComponent<Image>();
@@ -207,11 +237,11 @@ namespace TapAway.Runtime
 			buttonRt.offsetMax = Vector2.zero;
 
 			var labelGo = CreateUi("Label", buttonGo.transform);
-			var label = labelGo.AddComponent<Text>();
+			label = labelGo.AddComponent<Text>();
 			label.font = _font;
 			label.text = labelText;
 			label.alignment = TextAnchor.MiddleCenter;
-			label.fontSize = 40;
+			label.fontSize = 36;
 			label.color = Color.white;
 			label.raycastTarget = false;
 			StretchFull(labelGo.GetComponent<RectTransform>());

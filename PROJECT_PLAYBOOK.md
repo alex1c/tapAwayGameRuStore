@@ -47,6 +47,8 @@ Version: 2026-09-17 (Phase 0)
   (see `Docs/PHASE3_CONTENT_PIPELINE.md`).
 - Phase 4 generated QA gameplay + Direction UX V2:
   `Docs/PHASE4_GENERATED_GAMEPLAY.md`.
+- Phase 5 campaign shell + persistence + mobile readability:
+  `Docs/PHASE5_CAMPAIGN.md`.
 
 ## 5. Android / RuStore QA
 

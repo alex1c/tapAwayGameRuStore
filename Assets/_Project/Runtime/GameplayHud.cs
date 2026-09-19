@@ -15,11 +15,13 @@ namespace TapAway.Runtime
 		private Text _remainingLabel;
 		private Text _devInfoLabel;
 		private Action _onRestart;
+		private Action _onPause;
 		private Font _font;
 
-		public void Configure(Action onRestart)
+		public void Configure(Action onRestart, Action onPause = null)
 		{
 			_onRestart = onRestart;
+			_onPause = onPause;
 			EnsureUi();
 			Show();
 		}
@@ -97,7 +99,7 @@ namespace TapAway.Runtime
 			safe.AddComponent<SafeAreaFitter>();
 
 			_levelLabel = CreateText(safe.transform, "LevelLabel", "Tap Away", 40,
-				new Vector2(0.06f, 0.88f), new Vector2(0.7f, 0.96f), TextAnchor.MiddleLeft);
+				new Vector2(0.06f, 0.88f), new Vector2(0.48f, 0.96f), TextAnchor.MiddleLeft);
 
 			_remainingLabel = CreateText(safe.transform, "Remaining", "Осталось: 0 / 0", 34,
 				new Vector2(0.06f, 0.82f), new Vector2(0.7f, 0.88f), TextAnchor.MiddleLeft);
@@ -114,14 +116,30 @@ namespace TapAway.Runtime
 			button.targetGraphic = img;
 			button.onClick.AddListener(() => _onRestart?.Invoke());
 			var rt = restartGo.GetComponent<RectTransform>();
-			rt.anchorMin = new Vector2(0.68f, 0.88f);
+			rt.anchorMin = new Vector2(0.72f, 0.88f);
 			rt.anchorMax = new Vector2(0.94f, 0.96f);
 			rt.offsetMin = Vector2.zero;
 			rt.offsetMax = Vector2.zero;
 
-			var restartLabel = CreateText(restartGo.transform, "Label", "Restart", 32,
+			var restartLabel = CreateText(restartGo.transform, "Label", "↻", 32,
 				Vector2.zero, Vector2.one, TextAnchor.MiddleCenter);
 			StretchFull(restartLabel.rectTransform);
+
+			var pauseGo = CreateUi("PauseButton", safe.transform);
+			var pauseImg = pauseGo.AddComponent<Image>();
+			pauseImg.color = new Color(0.18f, 0.22f, 0.3f, 0.85f);
+			var pauseBtn = pauseGo.AddComponent<Button>();
+			pauseBtn.targetGraphic = pauseImg;
+			pauseBtn.onClick.AddListener(() => _onPause?.Invoke());
+			var pauseRt = pauseGo.GetComponent<RectTransform>();
+			pauseRt.anchorMin = new Vector2(0.5f, 0.88f);
+			pauseRt.anchorMax = new Vector2(0.7f, 0.96f);
+			pauseRt.offsetMin = Vector2.zero;
+			pauseRt.offsetMax = Vector2.zero;
+
+			var pauseLabel = CreateText(pauseGo.transform, "Label", "Ⅱ", 32,
+				Vector2.zero, Vector2.one, TextAnchor.MiddleCenter);
+			StretchFull(pauseLabel.rectTransform);
 		}
 
 		private Text CreateText(

@@ -80,3 +80,9 @@ See [Docs/PHASE4_GENERATED_GAMEPLAY.md](Docs/PHASE4_GENERATED_GAMEPLAY.md).
 
 Runtime hotfix: `FoundationMarker` disabled during gameplay; `GameplayPhase` drives input after level transitions (Tutorial→QA / Next Level).
 
+## Phase 5
+
+See [Docs/PHASE5_CAMPAIGN.md](Docs/PHASE5_CAMPAIGN.md).
+
+Home → 30-level campaign with local JSON progress; block counts capped for mobile readability (max 20).
+

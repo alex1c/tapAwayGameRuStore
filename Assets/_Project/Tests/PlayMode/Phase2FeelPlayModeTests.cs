@@ -99,6 +99,11 @@ namespace TapAway.PlayMode.Tests
 			{
 				yield return null;
 			}
+
+			var bootstrap = Object.FindFirstObjectByType<LevelBootstrap>();
+			bootstrap.LoadPrototype();
+			yield return null;
+			yield return null;
 		}
 	}
 }

@@ -90,8 +90,8 @@ namespace TapAway.Runtime
 		}
 
 		/// <summary>
-		/// Frames world bounds using aspect-aware FOV math with HUD reserve padding.
-		/// Adapts zoom clamps to puzzle size so large generated levels stay inspectable.
+		/// Frames world bounds with overview fit + inspection zoom from
+		/// <see cref="MobileReadabilityMath"/> so large puzzles stay tappable.
 		/// </summary>
 		public void FrameBounds(Bounds bounds)
 		{
@@ -101,21 +101,23 @@ namespace TapAway.Runtime
 				bounds.extents.y,
 				bounds.extents.z);
 
-			// Size-aware zoom range — keep player out of geometry, allow inspection.
-			_minDistance = Mathf.Clamp(radius * 0.9f, 2.5f, 8f);
-			_maxDistance = Mathf.Clamp(radius * 5.5f, 12f, 40f);
-
 			var cam = Camera;
 			var vFov = cam != null ? cam.fieldOfView : 60f;
 			var aspect = cam != null ? Mathf.Max(0.01f, cam.aspect) : (9f / 16f);
 			var padding = _framePadding + _hudVerticalReserve;
-			_distance = CameraFramingMath.ComputeOrbitDistance(
+
+			MobileReadabilityMath.ComputeZoomClamps(
 				radius,
 				vFov,
 				aspect,
 				padding,
-				_minDistance,
-				_maxDistance);
+				out var minDist,
+				out var maxDist,
+				out var overviewDist);
+
+			_minDistance = minDist;
+			_maxDistance = maxDist;
+			_distance = overviewDist;
 			_framedDistance = _distance;
 			ApplyTransform();
 		}

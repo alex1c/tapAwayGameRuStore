@@ -418,6 +418,16 @@ namespace TapAway.Runtime
 			}
 		}
 
+		/// <summary>Menu transitions: clear views without waiting for a new Initialize.</summary>
+		public void ClearViewsImmediate()
+		{
+			StopAllCoroutines();
+			_inputLocked = false;
+			_interactionEnabled = false;
+			ClearViews();
+			_state = null;
+		}
+
 		private static Color ColorFor(int id)
 		{
 			// Slightly higher value keeps underside faces readable under ambient fill.
